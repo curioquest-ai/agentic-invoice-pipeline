@@ -9,7 +9,10 @@ pydantic>=2
 ollama
 pdfplumber
 
-# Track B — paid API
+# Track B — paid API via OpenRouter (one key, every model)
+httpx
+
+# only needed for Track C's optional --llm anthropic path
 anthropic
 
 # Track C — framework (comment out if not your track; heavier install)

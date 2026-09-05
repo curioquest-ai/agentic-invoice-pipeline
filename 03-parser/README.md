@@ -3,7 +3,7 @@
 | | run | needs | status |
 |---|---|---|---|
 | **A** free/local | `python track_a_local.py --limit 5` | `ollama pull qwen2.5vl:7b` (at home!) | **run end to end, measured** |
-| **B** paid API | `python track_b_api.py --limit 5` | `ANTHROPIC_API_KEY` in `.env` | corrected, **never executed** |
+| **B** paid API | `python track_b_api.py --limit 5` | `OPENROUTER_API_KEY` in `.env` | corrected, **never executed** |
 | **C** framework | `python track_c_llamaindex.py --limit 5` | `LLAMA_CLOUD_API_KEY` in `.env` + a ~180 MB install. Stage 2 is local by default — no second key | **run end to end, measured: 82.8%** |
 
 Always smoke-test with `--limit 5` before spending time or money on 100.
@@ -139,7 +139,7 @@ them into each JSONL row, and sum. It is about six lines.
 |---|---|---|
 | A | 8 GB laptop on the vision path — glacial, one doc never finishes | `--text-fallback` |
 | A | `ConnectionError` on :11434 | `ollama serve &` |
-| B | `authentication_error` | `ANTHROPIC_API_KEY=sk-ant-…` in repo-root `.env` |
+| B | `401` / `No auth credentials` | `OPENROUTER_API_KEY=sk-or-v1-…` in repo-root `.env`, beside `setup.sh` |
 | B | Every doc `ERR`, output file full, score 0% | a rejected request parameter — read the error text on row 1 rather than the wall of them |
 | B | Unexplained `ValidationError` on a long invoice | `max_tokens` truncation. `parse_one` now names this explicitly; raise `TRACK_B_MAX_TOKENS` |
 | C | `ModuleNotFoundError: llama_cloud_services` | the llama-index lines in `requirements.txt` are commented out on purpose (~180 MB). Uncomment, `pip install`, **at home** |

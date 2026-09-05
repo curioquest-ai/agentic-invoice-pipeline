@@ -437,7 +437,7 @@ python track_c_llamaindex.py --limit 5</pre>
 
   <div class="panel warn"><span class="lab">If you see</span>
     <b>Every document says ERR and your score is 0%</b> — a request parameter was rejected. This does <i>not</i> crash: the retry fires, the runner catches per document, and you get a full 100-row file with zero fields. Read the <code>error</code> text on row 1.<br>
-    <b>B: <code>authentication_error</code></b> — <code>ANTHROPIC_API_KEY=sk-ant-…</code> in the repo-root <code>.env</code>.<br>
+    <b>B: <code>401</code> / <code>No auth credentials</code></b> — <code>OPENROUTER_API_KEY=sk-or-v1-…</code> in the repo-root <code>.env</code>.<br>
     <b>B: an unexplained <code>ValidationError</code> on a long invoice</b> — that is <code>max_tokens</code> truncation, not a schema problem. Raise <code>TRACK_B_MAX_TOKENS</code>.<br>
     <b>C: <code>ModuleNotFoundError: llama_cloud_services</code></b> — the llama-index lines in <code>requirements.txt</code> are commented out on purpose. Uncomment and <code>pip install</code> — <b>at home</b>, it is a heavy install.<br>
     <b>C: it raises inside <code>Anthropic(...)</code> before any network call</b> — llama-index keeps its own model registry. Upgrade <code>llama-index-llms-anthropic</code>, or pass <code>--model</code> with an id it knows.<br>
@@ -454,7 +454,7 @@ python track_c_llamaindex.py --limit 5</pre>
     <b><code>ConnectionError</code> on port 11434</b> — run <code>ollama serve &amp;</code>.<br>
     <b><code>model not found</code></b> — check <code>ollama list</code>, or pass <code>--model &lt;name&gt;</code>.<br>
     <b><code>JSONDecodeError</code> on a few documents</b> — that's the safety cap firing, and it is working. A visible failure beats a silent stall.<br>
-    <b>Track B <code>authentication_error</code></b> — put <code>ANTHROPIC_API_KEY=sk-ant-…</code> in <code>.env</code> at the repo root.</div>
+    <b>Track B <code>401</code></b> — put <code>OPENROUTER_API_KEY=sk-or-v1-…</code> in <code>.env</code> at the repo root. One key, every model.</div>
   <div class="panel why"><span class="lab">The important part — two rules in the shared prompt</span>
     <pre>2. DO NOT CORRECT ANYTHING. If the tax math does not add up,
    report the printed numbers anyway.

@@ -188,7 +188,9 @@ footer{margin-top:70px;padding-top:22px;border-top:1px solid var(--rule);
 <div class="step">
   <span class="stepno">Step B1</span>
   <h3>Put your key in <code>.env</code> — repo root, not <code>03-parser/</code></h3>
-  <pre>echo 'ANTHROPIC_API_KEY=sk-ant-...' &gt;&gt; .env</pre>
+  <pre>echo 'OPENROUTER_API_KEY=sk-or-v1-...' &gt;&gt; .env</pre>
+  <p>One key gets you every model on OpenRouter — Claude, and everything else. Grab one at
+  <b>openrouter.ai/keys</b>.</p>
   <div class="panel check"><span class="lab">Check it worked</span>
     <code>common.py</code> auto-loads the repo-root <code>.env</code> on import — no
     <code>export</code> needed, no shell restart. Real environment variables win over the
@@ -279,7 +281,7 @@ output    350 × $10/1M = $0.0035
     for all three tracks. Come here at <b>14:00</b>, go back there at <b>15:00</b>.</div>
 
 <footer>
-Track B · <code>03-parser/track_b_api.py</code> · needs <code>ANTHROPIC_API_KEY</code>.
+Track B · <code>03-parser/track_b_api.py</code> · needs <code>OPENROUTER_API_KEY</code>.
 Corrected from the provider docs during the pre-flight; never executed. Smoke-test at
 <code>--limit 1</code>.
 </footer>
