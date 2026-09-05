@@ -1096,6 +1096,11 @@ const QUANTS = [
 ];
 const BW_EFF = 0.72;
 
+/* Monthly spend below which two models are, for deciding purposes, the same
+   price. Without it the cost axis rescales to whatever the cheapest model
+   happens to charge, and a $4.65/month saving outranks 33 points of benchmark. */
+const COST_FLOOR = 20;
+
 function kvOverhead(ctx){
   /* +25% at 8K scaling to +100% at 32K and beyond */
   const c = Math.max(2000, Math.min(ctx || 8000, 32000));
@@ -1255,8 +1260,11 @@ function rank(){
   const wantLocal = STATE.deploy !== "api" || STATE.reqPrivate;
   const apiAllowed = STATE.deploy !== "local" && !STATE.reqPrivate;
 
-  const cuts = { ctx:[], caps:[], open:[], bench:[], price:[], legacy:[] };
+  const cuts = { ctx:[], caps:[], open:[], bench:[], price:[], legacy:[], hw:[] };
   const pool = [];
+  const localMode = STATE.deploy === "local" || STATE.reqPrivate;
+  const localCtx = Math.max(8000, Math.min(vol.inTok + vol.outTok, 32000));
+  const fits = new Map();      /* model id -> localFit, computed once */
 
   for(const m of STATE.catalog){
     if(m.fp && m.fp.status === "legacy"){ cuts.legacy.push(m); continue; }
@@ -1278,12 +1286,27 @@ function rank(){
     if(openOnly && !m.open){ cuts.open.push(m); continue; }
     if(!m.q || !m.hasQ){ cuts.bench.push(m); continue; }
     if(m.inP === 0 && m.outP === 0 && !m.open){ cuts.price.push(m); continue; }
+
+    /* Fitting the machine is a constraint, not a bonus. A model whose size we
+       know and which does not fit is removed and shown under "ruled out"; a
+       model whose size we cannot look up is kept, because guessing it away
+       would be worse than admitting we do not know. */
+    if(localMode){
+      const f = localFit(m, STATE.hw, localCtx);
+      if(f){
+        if(!f.best){ cuts.hw.push(m); continue; }
+        fits.set(m.id, f);
+      }
+    }
     pool.push(m);
   }
 
-  /* cost score across the surviving pool, log-scaled */
+  /* Cost score across the surviving pool, log-scaled -- but with a floor, so a
+     difference nobody would hold a meeting about cannot outrank the benchmarks.
+     Below COST_FLOOR a month the models tie at 100 and quality decides; above
+     it the scale behaves exactly as before. */
   const costs = pool.map(m => apiMonthly(m, vol, false).month);
-  const lo = Math.min(...costs.filter(c => c > 0)) || 1;
+  const lo = Math.max(COST_FLOOR, Math.min(...costs.filter(c => c > 0)) || 1);
   const hi = Math.max(...costs) || 1;
   const lg = v => Math.log10(Math.max(v, lo / 4));
   const span = Math.max(0.001, lg(hi) - lg(lo));
@@ -1314,11 +1337,13 @@ function rank(){
     /* When the whole point is running it yourself, a model that does not fit the
        machine is close to useless however well it scores. Weight fit heavily —
        enough to float runnable models to the top, not enough to crown a bad one. */
-    if(STATE.deploy === "local" || STATE.reqPrivate){
-      const f = localFit(m, STATE.hw, Math.max(8000, Math.min(vol.inTok + vol.outTok, 32000)));
-      if(f && f.best){
-        bonus += f.best.verdict === "yes" ? 25 : f.best.verdict === "offload" ? 5 : -15;
-      }
+    /* Everything left in the pool runs. The only thing still worth encoding is
+       HOW it runs: an offloaded model crosses the PCIe bus for every token, so
+       it is a real option and a slow one. A small, honest penalty -- not the
+       +25 cliff that used to crown whatever barely fit. */
+    if(localMode){
+      const f = fits.get(m.id);
+      if(f && f.best && f.best.verdict === "offload") bonus -= 6;
     }
 
     return { m, quality, rawQuality, coverage, costScore, cost, bonus,
@@ -1326,7 +1351,28 @@ function rank(){
   });
 
   scored.sort((a, b) => b.fit - a.fit);
-  return { task, scored, cuts, cw, qw, wantLocal, apiAllowed, pool };
+
+  /* In local mode the pool is only what your machine can hold. Renting is still
+     an option unless the data is not allowed to leave, so work out the best
+     hosted model that cleared the same task filters -- the verdict uses it to
+     say what the hardware constraint is actually costing you in ability. */
+  let apiCeiling = null;
+  if(STATE.deploy === "local" && !STATE.reqPrivate && !STATE.reqOpen){
+    const eligible = [...cuts.hw, ...cuts.open].filter(m => m.q && m.hasQ);
+    let bestQ = -1;
+    for(const m of eligible){
+      let acc = 0, cov = 0;
+      for(const k of ["agentic", "coding", "intel"]){
+        const w = task.w[k] || 0;
+        if(w && m.q[k] != null){ acc += w * m.q[k]; cov += w; }
+      }
+      if(!cov) continue;
+      const q = (acc / cov) * (0.6 + 0.4 * cov);
+      if(q > bestQ){ bestQ = q; apiCeiling = { m, quality:q, cost: apiMonthly(m, vol, false).month }; }
+    }
+  }
+
+  return { task, scored, cuts, cw, qw, wantLocal, apiAllowed, pool, apiCeiling };
 }
 
 /* ═══════════════════════════════════════════════════════════════════════
@@ -1467,6 +1513,19 @@ function verdict(R){
     fit.best.k}, so running it yourself is a real option rather than a theoretical one.`);
   else if(m.open && R.wantLocal && fit) bits.push(`The weights are downloadable, but at ${
     Math.round(fit.totalB)}B parameters it is far too large for your current machine — this pick is via the API.`);
+  /* What the hardware is costing you. This is the Track A vs Track B answer, and
+     without it a small laptop gets told "4 of 100" with nothing to weigh it against. */
+  if(R.apiCeiling && R.apiCeiling.quality - s.quality > 10){
+    /* The ceiling can be excluded for either reason -- too big for your memory,
+       or hosted-only with no weights to download -- so say "rent", which is true
+       of both, rather than naming the wrong constraint. */
+    bits.push(`<b>What running it yourself is costing you:</b> the best model you could
+      rent instead is <b>${esc(R.apiCeiling.m.name)}</b> at
+      <b>${R.apiCeiling.quality.toFixed(0)} of 100</b> — ${
+      (R.apiCeiling.quality - s.quality).toFixed(0)} points better, for ${
+      fmtUsd(R.apiCeiling.cost)} a month rented. Switch question 2 to
+      <i>Compare both</i> to price that trade properly.`);
+  }
 
   return `<div class="verdict">
     <div class="v-kick">Recommended for ${esc(R.task.label.toLowerCase())}</div>
@@ -1764,6 +1823,8 @@ function cutsTable(cuts){
     STATE.reqPrivate ? "hosted-only, and your data must stay in your network"
       : STATE.deploy === "local" ? "no downloadable weights, so they cannot run on your machine"
       : "no downloadable weights", ex(cuts.open)]);
+  if(cuts.hw && cuts.hw.length) items.push([cuts.hw.length,
+    `too large for your ${esc(STATE.hw.gpu)} (${STATE.hw.vram} GB) even at Q4 with offload`, ex(cuts.hw)]);
   if(cuts.bench && cuts.bench.length) items.push([cuts.bench.length, "no published benchmark scores at all — ranking them would be guesswork", ex(cuts.bench)]);
   if(cuts.legacy && cuts.legacy.length) items.push([cuts.legacy.length, "marked legacy by their own provider", ex(cuts.legacy)]);
   if(!items.length) return `<p style="color:var(--ink-2)">Nothing was eliminated — every model in the catalog cleared your constraints.</p>`;

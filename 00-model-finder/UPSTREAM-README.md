@@ -64,7 +64,13 @@ No provider is promoted. The ranking is a pure function of your answers and thos
 
 **A `:batch` row is only treated as a batch tier when it is actually cheaper.** For several providers OpenRouter's batch variant is priced *above* the base rate; those are dropped rather than presented as a discount.
 
-**Choosing "My machine" changes the ranking, not just the display.** A model that cannot fit your hardware is close to useless when the whole point is self-hosting, so fitting earns a large bonus and not fitting a penalty — enough to float runnable models to the top without crowning a bad one. Models that don't fit stay visible, so you can see what a bigger machine would buy you.
+**Choosing "My machine" changes the ranking, not just the display — and fitting is a filter, not a score.** A model whose size is known and which does not fit is removed and listed under "what was ruled out", so you can still see what a bigger machine would buy. Among the models that *do* fit, quality and cost decide exactly as they do in hosted mode; the only remaining adjustment is a small penalty for a model that only runs by offloading to system RAM, because every token then crosses a much slower bus. A model whose parameter count cannot be looked up is kept rather than guessed away.
+
+This used to be a flat +25 bonus for fitting, which on a 0–100 scale outranked roughly 65 points of benchmark: asking for local extraction on a 24 GB card returned a model scoring **11 of 100** ahead of one scoring **82**. Fitting is a yes/no constraint and is now modelled as one.
+
+**The cost axis has a floor, so a rounding error cannot outbid the benchmarks.** Cost is scored log-scaled across the surviving pool, which used to stretch to the full 0–100 however small the absolute numbers were. At 1,000 requests a day that let a model scoring 49 beat one scoring 82 in order to save **$4.65 a month**. Monthly spends below `COST_FLOOR` ($20) now tie at the top of the cost axis and quality decides; above it the scale behaves as before, so at real volume price still dominates as it should.
+
+**When your machine is the constraint, the verdict says what that costs you.** In "My machine" mode the tool also reports the best model you could rent instead and the ability gap between them, so the self-host-or-rent decision is on the screen rather than implied.
 
 ## Refreshing / hacking
 
