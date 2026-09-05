@@ -68,9 +68,14 @@ def run_track(
     parse_one: Callable[[Path], dict],
     out_path: str | Path,
     limit: int | None = None,
+    extra: Callable[[], dict] | None = None,
 ) -> None:
     """Run parse_one over the dataset; emit outputs.jsonl with per-doc
     {doc_id, fields, validation_flags, latency_s, error}. One retry per doc.
+
+    `extra` is an optional no-arg callable returning a dict merged into each
+    row after parse_one runs -- used by Track B to record the token usage the
+    API reported, so cost is measured rather than estimated (gotcha G6).
     """
     out_path = Path(out_path)
     n_ok = n_err = 0
@@ -90,6 +95,11 @@ def run_track(
                 row["error"] = f"{type(e).__name__}: {e}"[:300]
                 n_err += 1
             row["latency_s"] = round(time.time() - t0, 2)
+            if extra:
+                try:
+                    row.update(extra() or {})
+                except Exception:          # metering must never kill a run
+                    pass
             f.write(json.dumps(row, ensure_ascii=False) + "\n")
             f.flush()
             print(f"[{name}] {doc.stem}  {'OK' if 'fields' in row else 'ERR'}  {row['latency_s']}s")

@@ -79,6 +79,15 @@ MAX_TOKENS = int(os.environ.get("TRACK_B_MAX_TOKENS", "2000"))
 
 TIMEOUT = float(os.environ.get("TRACK_B_TIMEOUT", "120"))
 
+# What the API said the last call cost. run_track() merges this into each JSONL
+# row, so cost/doc is measured per document rather than estimated once and hoped
+# over. Reset per call; never let a stale value leak into the next row.
+LAST_USAGE: dict = {}
+
+
+def _usage() -> dict:
+    return dict(LAST_USAGE)
+
 
 def parse_one(pdf: Path) -> dict:
     import httpx  # already present via the anthropic package; listed in requirements
@@ -105,6 +114,10 @@ def parse_one(pdf: Path) -> dict:
         }],
         # Forced: the model cannot answer in prose, only through the schema.
         "tool_choice": {"type": "function", "function": {"name": "record_invoice"}},
+        # Ask OpenRouter to return token counts AND the actual charge for this
+        # call. Without this you get an accuracy number and no idea what it
+        # cost -- which is gotcha G6, and we shipped exactly that mistake once.
+        "usage": {"include": True},
         # Send the PDF to the model itself rather than OCR-ing it first. See the
         # docstring -- the default here is an OCR engine, and for born-digital
         # PDFs that is the wrong tool.
@@ -141,6 +154,16 @@ def parse_one(pdf: Path) -> dict:
             "Raise TRACK_B_MAX_TOKENS; do not blame the schema."
         )
 
+    u = body.get("usage") or {}
+    LAST_USAGE.clear()
+    LAST_USAGE.update({
+        "gen_id": body.get("id"),                      # look this up later at
+                                                       # /api/v1/generation?id=
+        "prompt_tokens": u.get("prompt_tokens"),
+        "completion_tokens": u.get("completion_tokens"),
+        "cost_usd": u.get("cost"),                     # present because of usage.include
+    })
+
     calls = (choice.get("message") or {}).get("tool_calls") or []
     if not calls:
         raise ValueError(
@@ -163,4 +186,21 @@ if __name__ == "__main__":
     if args.model:
         MODEL = args.model
     print(f"[B] OpenRouter -> {MODEL}")
-    run_track("B-api", args.dataset, "pdf", parse_one, "outputs_track_b.jsonl", args.limit)
+    out = "outputs_track_b.jsonl"
+    run_track("B-api", args.dataset, "pdf", parse_one, out, args.limit, extra=_usage)
+
+    # Measured cost, not estimated. This is the number to hand to eval.py.
+    rows = [json.loads(l) for l in open(out, encoding="utf-8")]
+    priced = [r for r in rows if r.get("cost_usd") is not None]
+    if priced:
+        usd = sum(r["cost_usd"] for r in priced)
+        pt = sum(r.get("prompt_tokens") or 0 for r in priced)
+        ct = sum(r.get("completion_tokens") or 0 for r in priced)
+        inr = float(os.environ.get("USD_INR", "88"))
+        per = usd / len(priced)
+        print(f"\n[B] MEASURED over {len(priced)} docs: {pt:,} prompt + {ct:,} completion tokens")
+        print(f"[B] ${usd:.4f} total  |  ${per:.5f}/doc  =  Rs.{per*inr:.2f}/doc")
+        print(f"[B] at 1M docs/month: Rs.{per*inr*1_000_000:,.0f}")
+        print(f"[B] grade it with:  --cost-per-doc {per*inr:.2f}")
+    else:
+        print("\n[B] no usage returned -- cost stays an estimate.")
