@@ -151,11 +151,10 @@ footer{margin-top:70px;padding-top:22px;border-top:1px solid var(--rule);
 </header>
 
 <div class="panel warn"><span class="lab">Read this before you start</span>
-    <b>This track has never been executed.</b> Track A was run end to end many times and every
-    number quoted for it is measured. This one was corrected from the provider documentation
-    during the pre-flight, but we had no API key, so no call has ever completed. Expect to be
-    the first person to run it. <b>Start at <code>--limit 1</code></b>, and read the error on
-    the <i>first</i> row rather than the wall of them.</div>
+    <b>Run end to end, and it won.</b> 100 documents through OpenRouter, zero errors, 8.6 minutes: <b>100.0% accuracy at 5.0 s/doc</b> — every field, every tier, the most accurate <i>and</i> the fastest of the three. Every number on this page is measured. Historical note: Track A was run many times and every
+    number quoted for it is measured too.
+    <br><br><b>Still start at <code>--limit 1</code></b>: your key and your model are not ours,
+    and on a paid API that habit is worth money.</div>
 
 <div class="blockhead"><span class="t">Why</span><h2>What this track teaches that Track A cannot</h2></div>
 <p class="blockintro">One line of code, and it is the whole reason to spend money today.</p>
@@ -242,8 +241,20 @@ python eval.py --outputs ../03-parser/outputs_track_b.jsonl \
                --cost-per-doc 0.75</pre>
   <div class="panel check"><span class="lab">Check it worked</span>
     <code>eval_report.md</code> with a leaderboard row reading <code>B-api | norm_acc=…</code>.
-    Paste it into the shared sheet next to the Track A rows. Same schema, same truth, same
-    scorer — that is what makes the comparison mean anything.</div>
+    Paste it into the shared sheet next to the Track A rows. Ours, for reference:
+    <code>B-api | norm_acc=100.0% | parse_fail=0 | flag_prec=100% | p50=5.04s</code></div>
+  <div class="panel why"><span class="lab">The result worth arguing about</span>
+    <div class="tw"><table>
+      <tr><th></th><th>accuracy</th><th>p50</th><th>flag precision</th></tr>
+      <tr><td>A · local</td><td>72.9%</td><td>8.2s</td><td>16%</td></tr>
+      <tr><td><b>B · this track</b></td><td><b>100.0%</b></td><td><b>5.0s</b></td><td><b>100%</b></td></tr>
+      <tr><td>C · framework</td><td>82.8%</td><td>23.5s</td><td>16%</td></tr>
+    </table></div>
+    <b>B is the fastest as well as the most accurate</b> — the local model is not "slower but
+    free", it is slower <i>and</i> worse on this task. The trade is money, not quality.
+    <br><br>And that precision column is <b>the same validators in all three rows</b>. 16% to
+    100% without a line changing. A precision collapse is a <i>parser</i> problem wearing a
+    validator costume.</div>
   <div class="panel warn"><span class="lab">If you picked a non-invoice document</span>
     Pass <b>your</b> tags to <code>--catchable</code>, from your spec card. Get it wrong and
     the report still prints, with <code>recall 0/0</code> and <code>precision 0%</code> — which
@@ -267,9 +278,9 @@ output    350 × $10/1M = $0.0035
   <tr><td>1M documents / month</td><td class="n">≈ ₹7.5 lakh</td><td>a headcount</td></tr>
   </tbody></table></div>
   <div class="panel warn"><span class="lab">This is an estimate, and that is the lesson</span>
-    <code>track_b_api.py</code> never reads <code>resp.usage</code>, so this repo <b>cannot
+    <code>track_b_api.py</code> never reads the <code>usage</code> block OpenRouter returns, so this repo <b>cannot
     tell you what a document actually cost</b> — on the one track that could measure it. That
-    is gotcha <b>G6</b> ("cost measured but never extrapolated") happening in our own code.
+    is gotcha <b>G6</b> in our own code — <b>we ran all 100, got the accuracy, and still cannot tell you the bill.</b>
     Want the real figure? Read <code>usage.input_tokens</code> / <code>usage.output_tokens</code>
     off the response, write them into each JSONL row, and sum. About six lines. It is the best
     twenty minutes you could spend on this track.</div>
@@ -282,8 +293,8 @@ output    350 × $10/1M = $0.0035
 
 <footer>
 Track B · <code>03-parser/track_b_api.py</code> · needs <code>OPENROUTER_API_KEY</code>.
-Corrected from the provider docs during the pre-flight; never executed. Smoke-test at
-<code>--limit 1</code>.
+<b>Run end to end over 100 documents on 6 Sep: 100.0%, 5.0 s/doc, zero errors.</b>
+
 </footer>
 
 </div>

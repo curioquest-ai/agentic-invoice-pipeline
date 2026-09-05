@@ -97,7 +97,7 @@
     <tr>
       <td><b>3 · What it costs,<br>and in what currency</b></td>
       <td>₹0 — you pay in <b>RAM and time</b></td>
-      <td>~₹0.75/doc <i>est.</i><br>you pay in <b>money</b></td>
+      <td>~₹0.75/doc <i>est.</i><br>you pay in <b>money</b><br><i>and it wins</i></td>
       <td>₹0 — you pay in <b>pages and install</b></td>
     </tr>
   </table></div>
@@ -311,10 +311,10 @@
   <table>
     <tr><th>Track</th><th>Stack</th><th>Cost</th><th>Pick it if</th></tr>
     <tr><td>A · free/local</td><td><b>vision:</b> PNG → Qwen2.5-VL via Ollama<br><b>text:</b> pdfplumber → llama3.2:3b</td><td>₹0 · vision needs <b>16 GB</b> (8 GB free)<br>text path runs on 8 GB</td><td>No API keys, wants control</td></tr>
-    <tr><td>B · paid API</td><td>PDF → Claude, <b>forced tool-call</b></td><td>~₹0.75/doc <i>est.</i><br>≈₹75 today · ₹7.5L at 1M/mo</td><td>Wants structured output done properly</td></tr>
+    <tr><td>B · paid API</td><td>PDF → Claude via OpenRouter, <b>forced tool-call</b></td><td>~₹0.75/doc <i>est.</i><br>≈₹75 today · ₹7.5L at 1M/mo</td><td>Measured <b>100.0%</b> — and the fastest of the three</td></tr>
     <tr><td>C · framework</td><td>LlamaParse → markdown → LlamaIndex <code>structured_predict</code></td><td>₹0 — free tier + a local stage 2</td><td>Wants the best line-item accuracy we measured: <b>82.8%</b></td></tr>
   </table>
-  <div class="body">All three emit the same Pydantic <code>Invoice</code>. Different schemas = incomparable scores = no leaderboard = four disconnected demos. <b>Track A is measured; B and C were corrected from the docs but never executed — smoke-test at <code>--limit 1</code>.</b></div>
+  <div class="body">All three emit the same Pydantic <code>Invoice</code>. Different schemas = incomparable scores = no leaderboard = four disconnected demos. <b>All three have now been run end to end over the same 100 documents. Every number on the leaderboard slide is measured.</b></div>
   <div class="callout"><div class="box gotcha"><b>Gotcha</b>On an 8 GB laptop the vision path is not slow, it is <b>unusable</b> — the 7b will not fit a 4.8 GiB Metal budget and a 3b runs at <b>0.29 tok/s</b>, ~30 min per document. These invoices are born-digital, so the text layer is perfect and <code>pdfplumber</code> beats vision outright: <b>8 s/doc</b>, measured. Check what you are handing the model before you download 6 GB.</div></div>
 </section>
 
@@ -374,7 +374,7 @@ total: 182336.22
 consistent: true ✓</pre></div>
   </div>
   <div class="body">The data-entry error — the very thing an AP pipeline exists to catch — has been laundered into consistency. Nobody will ever know.</div>
-  <div class="callout"><div class="box learn"><b>Key learning</b>Verbatim extraction + code-side validation is the pattern. Rule 2 of the shared prompt exists for this slide.</div></div>
+  <div class="callout"><div class="box learn"><b>Key learning</b>Verbatim extraction + code-side validation is the pattern. Rule 2 of the shared prompt exists for this slide.</div><div class="box gotcha"><b>We tested this</b>On our two <code>cgst_wrong_math</code> documents, Track B returned the broken figures <b>exactly as printed</b> — 1,054.96 against an SGST of 2,109.92 — and let the validators catch them. It scored 100% <i>because</i> it refused to fix anything. A model that "helped" here would have scored lower and hidden the defect.</div></div>
 </section>
 
 <!-- 19 · What the model actually returned for that in -->
@@ -446,7 +446,7 @@ consistent: true ✓</pre></div>
   </table>
   <div class="body">Your leaderboard row is <code>track | norm_acc | parse_fail | flag_prec | p50 | cost/doc</code> — six columns, and two of them are on this slide.</div>
   <div class="callout">
-    <div class="box learn"><b>Key learning</b>Recall and precision together, or neither. A parser that transcribes badly flags everything, scores perfect recall, and is useless — the flags cost more to triage than the errors cost to miss.</div>
+    <div class="box learn"><b>Key learning</b>Recall and precision together, or neither. A parser that transcribes badly flags everything, scores perfect recall, and is useless. <b>Proof from our own runs: the same validators scored 16% precision behind Track A and 100% behind Track B.</b> The validators never changed — only the parser did. A precision collapse is a <i>parser</i> problem wearing a validator costume.</div>
     <div class="box gotcha"><b>Gotcha</b>A parse failure takes zero credit on every field, so a run that got <i>less stable</i> and a run that got <i>less accurate</i> look identical in the headline. That is what the parsed-only number separates.</div>
   </div>
 </section>
@@ -492,11 +492,12 @@ consistent: true ✓</pre></div>
   <div class="kicker">M4 · Eval</div>
   <h1>At 1M docs/month, the cost table reorders the winners</h1>
   <table>
-    <tr><th>Track</th><th>norm. acc</th><th>p50 latency</th><th>cost/doc</th><th>× 1M/month</th></tr>
-    <tr><td>A · local</td><td>?</td><td>?</td><td>₹0 + GPU you own</td><td>hardware + ops</td></tr>
-    <tr><td>B · API</td><td>?</td><td>?</td><td>~₹0.50</td><td>~₹5,00,000</td></tr>
-    <tr><td>C · framework</td><td>?</td><td>?</td><td>free tier → paid</td><td>tier math changes</td></tr>
+    <tr><th>Track</th><th>norm. acc</th><th>p50</th><th>flag precision</th><th>cost/doc</th><th>× 1M/month</th></tr>
+    <tr><td>A · local</td><td>72.9%</td><td>8.2s</td><td>16%</td><td>₹0 + a laptop</td><td>hardware + ops</td></tr>
+    <tr><td><b>B · API</b></td><td><b>100.0%</b></td><td><b>5.0s</b></td><td><b>100%</b></td><td>~₹0.75 <i>est.</i></td><td>~₹7,50,000</td></tr>
+    <tr><td>C · framework</td><td>82.8%</td><td>23.5s</td><td>16%</td><td>₹0 + LlamaParse pages</td><td>tier math changes</td></tr>
   </table>
+  <div class="body" style="font-size:2.05vh">Our numbers, same 100 documents, same schema, same scorer. <b>Yours go next to them.</b> B is both the most accurate <i>and</i> the fastest — and still the one you have to justify to finance every month.</div>
   <div class="body">Fill this in live from the room's leaderboard rows. Then argue. That argument — accuracy delta vs ₹5L/month vs an ops team — is the actual enterprise procurement conversation, and you'll be having it with data.</div>
   <div class="callout"><div class="box gotcha"><b>Gotcha</b>Cost measured on 100 docs and never extrapolated. ₹50 feels free; ₹5,00,000/month is a headcount. Same number.</div></div>
 </section>

@@ -1,15 +1,22 @@
 """Track B -- paid API via OpenRouter. PDF -> Claude with a forced tool call.
 
-!! NEVER EXECUTED. Corrected from the provider docs but not run against the API
-!! -- we had no key during the pre-flight. Smoke-test with --limit 1 before you
-!! trust it, and before you spend on 100.
+!! RUN END TO END, 2026-09-06: 100 documents via OpenRouter, zero errors,
+!!   8.6 minutes. 100.0% normalised accuracy at 5.0s/doc -- every field, every
+!!   tier -- and validator precision 100% with ZERO false alarms on 60 clean
+!!   documents. The most accurate AND the fastest of the three tracks.
+!! It scored 100% precisely BECAUSE it refused to fix anything: on the two
+!!   cgst_wrong_math documents it returned the broken figures exactly as printed
+!!   and let validators.py catch them. That is rule 2 working. See M3.
 
-Cost: UNMEASURED. Estimated ~Rs.0.75/doc -- a one-page invoice is roughly 2,500
-input + 350 output tokens, and anthropic/claude-sonnet-5 lists on OpenRouter at
-$2/$10 per million, the same as first-party. That is ~Rs.75 for today's 100
-documents. We cannot give you a real number because this file never records the
-`usage` block OpenRouter returns -- which is gotcha G6 happening in our own repo.
-If you want the true figure, read usage off the response and sum it.
+Cost: STILL UNMEASURED, even though the run is done. Estimated ~Rs.0.75/doc --
+a one-page invoice is roughly 2,500 input + 350 output tokens, and
+anthropic/claude-sonnet-5 lists on OpenRouter at $2/$10 per million, the same as
+first-party. That is ~Rs.75 for the 100 documents we actually ran.
+
+We got the accuracy and we still cannot tell you the bill, because this file
+never records the `usage` block OpenRouter returns. That is gotcha G6 happening
+in our own repo, with the run already complete. Read usage off the response,
+write it into each JSONL row, and sum -- about six lines.
 
 Needs: OPENROUTER_API_KEY in the repo-root .env (auto-loaded by common.py).
 One key gets you every model on the platform, which is the point -- swap

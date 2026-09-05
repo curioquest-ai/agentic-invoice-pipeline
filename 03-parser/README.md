@@ -3,7 +3,7 @@
 | | run | needs | status |
 |---|---|---|---|
 | **A** free/local | `python track_a_local.py --limit 5` | `ollama pull qwen2.5vl:7b` (at home!) | **run end to end, measured** |
-| **B** paid API | `python track_b_api.py --limit 5` | `OPENROUTER_API_KEY` in `.env` | corrected, **never executed** |
+| **B** paid API | `python track_b_api.py --limit 5` | `OPENROUTER_API_KEY` in `.env` | **run end to end: 100.0%** |
 | **C** framework | `python track_c_llamaindex.py --limit 5` | `LLAMA_CLOUD_API_KEY` in `.env` + a ~180 MB install. Stage 2 is local by default — no second key | **run end to end, measured: 82.8%** |
 
 Always smoke-test with `--limit 5` before spending time or money on 100.
@@ -13,9 +13,21 @@ different schemas = incomparable scores = no leaderboard.
 All three take `--model` now, so you can swap models without editing source. That swap,
 followed by a re-run of the same eval, *is* the workshop.
 
-> **Honesty note.** Tracks **A and C** were both run end to end over all 100 documents and
-> every number quoted for them is measured. **Track B has never been executed** — no Anthropic
-> key. Smoke-test at `--limit 1` regardless.
+> **All three tracks have now been run end to end over the same 100 documents**, and every
+> number quoted anywhere in this repo is measured:
+>
+> | | accuracy | p50 | flag precision |
+> |---|---:|---:|---:|
+> | A · pdfplumber + llama3.2:3b | 72.9% | 8.2 s | 16% |
+> | **B · Claude Sonnet 5 via OpenRouter** | **100.0%** | **5.0 s** | **100%** |
+> | C · LlamaParse + llama3.2:3b | 82.8% | 23.5 s | 16% |
+>
+> Zero parse failures on all three. Smoke-test at `--limit 1` regardless — your keys and
+> models are not ours.
+>
+> **The precision column is the same `validators.py` in all three rows.** It went from 16% to
+> 100% without a line changing. A precision collapse is a *parser* problem wearing a validator
+> costume — which is exactly what the report was trying to tell you.
 
 ---
 

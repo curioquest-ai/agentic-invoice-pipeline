@@ -419,7 +419,7 @@ python track_c_llamaindex.py --limit 5</pre>
     <b>Track C (framework)</b> → open <code>docs/Workshop-Steps-TrackC.html</code><br><br>
     Each one has its own numbered steps, its own checks, and its own failure list — including the ones that do not look like failures. The summary below is the short version; the sheets are what you actually follow.</div>
   <div class="panel warn"><span class="lab">Both of these are untested</span>
-    Track A was run end to end many times and every number we quote for it is measured. <b>Tracks B and C have never been executed</b> — we had no API keys during the pre-flight. They were corrected from the provider docs, not from a green test. <b>Run <code>--limit 1</code> first</b>, and read the error on the first row rather than the wall of them.</div>
+    All three tracks have now been run end to end over the same 100 documents: <b>A 72.9%</b> (8.2 s/doc), <b>B 100.0%</b> (5.0 s/doc), <b>C 82.8%</b> (23.5 s/doc) — zero errors on all three. Every number is measured. <b>Still run <code>--limit 1</code> first</b>: your keys and models are not ours, and on a paid API that habit is worth money.</div>
 
   <p><b>Track B — the paid API.</b> You are here for one line of code:</p>
   <pre>tool_choice={"type": "tool", "name": "record_invoice"}</pre>

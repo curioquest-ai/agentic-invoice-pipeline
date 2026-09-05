@@ -436,3 +436,32 @@ G4 itself stands — we are not comparing against OCR. What was wrong was extend
 
 Corrected in `03-parser/track_c_llamaindex.py`, `03-parser/README.md`,
 `docs/Workshop-Steps-TrackC.html` and `docs/index.html`.
+
+---
+
+## 12 · Track B, run end to end via OpenRouter (6 Sep) — all three tracks now measured
+
+Switched Track B from the Anthropic SDK to OpenRouter's OpenAI-compatible endpoint (one key,
+every model), then ran all 100 documents. **Zero errors, 8.6 minutes, 5.1 s/doc.**
+
+| | accuracy | p50 | flag precision | false alarms on 60 clean |
+|---|---:|---:|---:|---:|
+| A · pdfplumber + llama3.2:3b | 72.9% | 8.2 s | 16% | 52 |
+| **B · Claude Sonnet 5 via OpenRouter** | **100.0%** | **5.0 s** | **100%** | **0** |
+| C · LlamaParse + llama3.2:3b | 82.8% | 23.5 s | 16% | 52 |
+
+**B is the most accurate *and* the fastest.** The local model is not "slower but free" — on
+this task it is slower *and* worse. The trade is money, not quality.
+
+**The precision column is the same `validators.py` in all three rows.** 16% → 100% without a
+line changing. A precision collapse is a *parser* problem wearing a validator costume, which
+is what the eval-literacy slide claims and now has proof behind it.
+
+**The M3 test passed explicitly.** On both `cgst_wrong_math` documents, Track B returned the
+broken figures exactly as printed — CGST 1,054.96 against an SGST of 2,109.92 — and let the
+validators catch them. It flagged 2 of 8 `broken` documents, which is exactly the ceiling
+(six of the eight are structurally undetectable per-document). **It scored 100% *because* it
+refused to fix anything.**
+
+Still unmeasured: the bill. `track_b_api.py` never records the `usage` block OpenRouter
+returns, so we have the accuracy and not the cost — G6 in our own repo, with the run complete.
