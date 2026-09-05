@@ -434,7 +434,7 @@
     <tr><th>Track</th><th>Stack</th><th>Cost</th><th>Pick it if</th></tr>
     <tr><td>A · free/local</td><td><b>vision:</b> PNG → Qwen2.5-VL via Ollama<br><b>text:</b> pdfplumber → llama3.2:3b</td><td>₹0 · vision needs <b>16 GB</b> (8 GB free)<br>text path runs on 8 GB</td><td>No API keys, wants control</td></tr>
     <tr><td>B · paid API</td><td>PDF → Claude via OpenRouter, <b>forced tool-call</b></td><td><b>₹1.01/doc</b> measured<br>₹101 today · <b>₹10.1L</b> at 1M/mo</td><td>Measured <b>100.0%</b> — and the fastest of the three</td></tr>
-    <tr><td>C · framework</td><td>LlamaParse → markdown → LlamaIndex <code>structured_predict</code></td><td>₹0 — free tier + a local stage 2</td><td>Wants the best line-item accuracy we measured: <b>82.8%</b></td></tr>
+    <tr><td>C · framework</td><td>LlamaParse → markdown → LlamaIndex <code>structured_predict</code></td><td>₹0 today — free tier + a local stage 2<br>sticker beyond it: <b>₹0.11/doc</b></td><td>Wants the best line-item accuracy we measured: <b>82.8%</b></td></tr>
   </table>
   <div class="body">All three emit the same Pydantic <code>Invoice</code>. Different schemas = incomparable scores = no leaderboard = four disconnected demos. <b>All three have now been run end to end over the same 100 documents. Every number on the leaderboard slide is measured.</b></div>
   <div class="callout"><div class="box gotcha"><b>Gotcha</b>On an 8 GB laptop the vision path is not slow, it is <b>unusable</b> — the 7b will not fit a 4.8 GiB Metal budget and a 3b runs at <b>0.29 tok/s</b>, ~30 min per document. These invoices are born-digital, so the text layer is perfect and <code>pdfplumber</code> beats vision outright: <b>8 s/doc</b>, measured. Check what you are handing the model before you download 6 GB.</div></div>
@@ -538,20 +538,20 @@ consistent: true ✓</pre></div>
         <tr><th>Field</th><th>clean</th><th>ok</th><th>bad</th><th>broken</th><th>ALL</th></tr>
         <tr><td>total</td><td>100%</td><td>98%</td><td>92%</td><td>63%</td><td><b>94%</b></td></tr>
         <tr><td>date</td><td>100%</td><td>85%</td><td>81%</td><td>88%</td><td><b>93%</b></td></tr>
-        <tr><td>item.hsn</td><td>99%</td><td>97%</td><td>90%</td><td>41%</td><td><b>92%</b></td></tr>
+        <tr><td>item.qty</td><td>99%</td><td>97%</td><td>90%</td><td>41%</td><td><b>92%</b></td></tr>
       </table>
     </div>
     <div>
       <div class="minicap">What our own run actually did</div>
       <table>
         <tr><th>Field</th><th>clean</th><th>ok</th><th>bad</th><th>broken</th><th>ALL</th></tr>
-        <tr><td>gstin</td><td>22%</td><td>20%</td><td>42%</td><td>25%</td><td><b>24%</b></td></tr>
-        <tr><td>item.rate</td><td>44%</td><td>43%</td><td>63%</td><td>53%</td><td><b>47%</b></td></tr>
-        <tr><td>item.amount</td><td>59%</td><td>66%</td><td>79%</td><td><b>100%</b></td><td><b>66%</b></td></tr>
+        <tr><td>gstin</td><td>52%</td><td>55%</td><td>75%</td><td>75%</td><td><b>57%</b></td></tr>
+        <tr><td>item.hsn</td><td>24%</td><td>19%</td><td>23%</td><td><b>60%</b></td><td><b>25%</b></td></tr>
+        <tr><td>item.amount</td><td>62%</td><td>67%</td><td>82%</td><td>75%</td><td><b>67%</b></td></tr>
       </table>
     </div>
   </div>
-  <div class="body">Left: the ALL column says "ship it", the broken column says "this fails precisely where it was needed." Right: our real run, where <code>item.amount</code> went the other way — <b>59% clean, 100% broken</b>. Your numbers land on the leaderboard at 15:45.</div>
+  <div class="body">Left: the ALL column says "ship it", the broken column says "this fails precisely where it was needed." Right: our real run, where <code>item.hsn</code> went the other way — <b>24% clean, 60% broken</b>. Your numbers land on the leaderboard at 15:45.</div>
   <div class="callout"><div class="box learn"><b>Key learning</b>Headline accuracy is a lie. "94% accurate" can mean 100% on clean docs and 40% on the broken 8%. The point is not that broken is always worst — it is that <b>until you slice, you do not know where your difficulty lives.</b></div><div class="box gotcha"><b>Gotcha</b>The broken tier injects <i>business-rule</i> violations — wrong tax math does not make a document harder to <b>read</b>. Our real difficulty was Indian 2-2-3 number formatting (<code>2,055.38</code> → <code>205538.0</code>), which cuts across every tier. Slicing is how you find that; assuming is how you miss it.</div></div>
 </section>
 
@@ -560,11 +560,11 @@ consistent: true ✓</pre></div>
   <div class="kicker">M4 · Eval</div>
   <h1>A validator that flags everything scores 100% recall</h1>
   <table>
-    <tr><th>Line in your report</th><th>Our first run</th><th>What it actually tells you</th></tr>
+    <tr><th>Line in your report</th><th>What we measured</th><th>What it actually tells you</th></tr>
     <tr><td>Validator recall on broken docs</td><td><b>10/10 caught</b></td><td>looks perfect — and means almost nothing alone</td></tr>
-    <tr><td>False flags on clean docs</td><td><b>59 of 60</b></td><td>it flagged nearly every clean document too</td></tr>
-    <tr><td>Validator <b>precision</b></td><td><b>16%</b></td><td>the number that says whether a flag is worth acting on</td></tr>
-    <tr><td>Headline vs <b>parsed-only</b></td><td>66.6% → <b>72.1%</b></td><td>a gap this size means a <i>stability</i> problem, not an accuracy one</td></tr>
+    <tr><td>False flags on clean docs</td><td><b>52 of 60</b></td><td>it flagged 52 of the 60 clean documents too — the next slide is one of them</td></tr>
+    <tr><td>Validator <b>precision</b></td><td><b>16%</b><br>10 true / 62 flagged</td><td>the number that says whether a flag is worth acting on</td></tr>
+    <tr><td>Headline vs <b>parsed-only</b></td><td>66.6% → <b>72.1%</b><br><i>our earlier run — this one had zero parse failures, so no gap</i></td><td>a gap this size means a <i>stability</i> problem, not an accuracy one</td></tr>
   </table>
   <div class="body">Your leaderboard row is <code>track | norm_acc | parse_fail | flag_prec | p50 | cost/doc</code> — six columns, and two of them are on this slide.</div>
   <div class="callout">
