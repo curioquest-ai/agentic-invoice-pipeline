@@ -235,7 +235,8 @@
                                     │
                                     ▼
                     /invoice/{id} ──► page.pdf() + screenshot     (document SECOND)</pre>
-  <div class="body">Shown here for the reference build (GST invoice); your team's document from the idea library flows through the same pipeline with three files swapped.</div>
+  <div class="body">Shown here for the reference build (GST invoice); your team's document flows through the same pipeline with three files swapped.</div>
+  <div class="callout"><div class="box learn"><b>Watch it happen</b>At 12:15 we run <code>python bot.py --headed --n 3</code> on the projector: a real browser fills the form field by field, and the terminal prints each ground-truth line <i>before</i> its document exists. You could <code>POST</code> straight to <code>/submit</code> and skip the browser entirely — <code>checkpoints/gen_checkpoint.py</code> is exactly that shortcut and yields the identical dataset. We drive the UI because the point is automating a screen you <b>do not own</b>.</div></div>
   <div class="callout"><div class="box gotcha"><b>Gotcha</b>Forms without stable id/name attributes force bots into brittle XPath guessing. Accessibility and automatability are the same property.</div></div>
 </section>
 
@@ -291,7 +292,7 @@
   <h1>Playwright for browsers, OpenRPA for desktops — pick by target, not by hype</h1>
   <div class="cols body">
     <div><b>Playwright</b><ul><li>Cross-platform, <code>pip install</code>, headless PDF printing</li><li>Runs on every laptop in this room, today</li><li>Our hands-on tool</li></ul></div>
-    <div><b>OpenRPA / OpenFlow</b><ul><li>Visual flow designer, enterprise orchestration</li><li>Earns its keep when the target is a Windows desktop app with no API</li><li>5-min demo now; wrong tool for a mixed-OS room</li></ul></div>
+    <div><b>OpenRPA / OpenFlow</b><ul><li>Visual flow designer, enterprise orchestration</li><li>Earns its keep when the target is a Windows desktop app with no API</li><li>Not used today — our target is a browser. We name it so you know <i>when</i> it would be right</li></ul></div>
   </div>
   <div class="callout"><div class="box learn"><b>Key learning</b>RPA choice is a function of the automation <i>target</i>. Browser → Playwright. Legacy desktop / Citrix → RPA suites. API exists → neither; call the API.</div></div>
 </section>

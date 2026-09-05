@@ -258,6 +258,27 @@ cd 01-form &amp;&amp; uvicorn app:app --port 8000</pre>
 <p class="blockintro">Open a second terminal. Leave the form server running in the first one.</p>
 
 <div class="step">
+  <span class="stepno">Step 2b</span>
+  <h3>Watch one get made — on the projector</h3>
+  <p>Your facilitator runs this first. You do not need to.</p>
+  <pre>cd 02-generator
+python bot.py --headed --n 3          <span class="c"># a real browser, slowly</span></pre>
+  <div class="panel why"><span class="lab">What to watch for</span>
+    The terminal prints the ground-truth line — vendor, GSTIN, the totals —
+    <b>before</b> the browser starts typing. The answer exists first; the document is
+    manufactured from it. That is the rule of the day, and this is the only time today
+    you will see it happen rather than be told about it.
+    <br><br>Demo mode writes to <code>demo_output/</code>, never <code>dataset/</code>, and refuses
+    to run more than five documents visibly.</div>
+  <div class="panel warn"><span class="lab">Fair question: why a browser at all?</span>
+    You could <code>POST</code> straight to <code>/submit</code> and skip it —
+    <code>checkpoints/gen_checkpoint.py</code> is that shortcut and produces the identical
+    dataset with no browser. We drive the UI because the scenario being taught is
+    <b>automating a screen you do not own</b>: a legacy ERP with no API. The form is a
+    stand-in, and we gave it the stable <code>id</code>s that make it easy. A real one will not.</div>
+</div>
+
+<div class="step">
   <span class="stepno">Step 3</span>
   <h3>Make ten documents first</h3>
   <pre>source .venv/bin/activate

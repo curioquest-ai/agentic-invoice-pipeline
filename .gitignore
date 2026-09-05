@@ -7,3 +7,4 @@ checkpoints/dataset/
 04-eval/eval_report.md
 .DS_Store
 04-eval/eval_report_v*.md
+demo_output/
