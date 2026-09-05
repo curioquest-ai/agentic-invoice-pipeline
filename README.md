@@ -35,6 +35,8 @@ Open any of these directly in a browser — no server, no build step. They are a
 | File | Who it's for | What's in it |
 |---|---|---|
 | `docs/Agentic-Workflows-Field-Manual.html` | **attendees, before Sunday** | what to install, what to decide, the sixteen ways this goes wrong, the run of show |
+| `docs/Workshop-Steps-TrackB.html` | **Track B teams** | the paid-API path: forced tool calls, what they do and don't guarantee, and what a document really costs |
+| `docs/Workshop-Steps-TrackC.html` | **Track C teams** | the framework path: the two-stage pattern, and the three things that fail before the network does |
 | `docs/Workshop-Steps.html` | **everyone, on the day** | the step sheet — made to be projected. Do this, check it worked, and here is the part that matters. Every command copy-paste ready. |
 | `docs/index.html` | **the room** | the slide deck — ←/→ or click the right third, type a number + Enter to jump, `P` to print |
 | `PREFLIGHT.md` | maintainers | findings from a full end-to-end rehearsal on an 8 GB laptop, and what was changed as a result |

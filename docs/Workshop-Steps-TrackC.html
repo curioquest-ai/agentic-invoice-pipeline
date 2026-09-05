@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Track C Steps</title>
+<!-- Build Agentic Workflows · SaarthiOS. Standalone: open directly, no server.
+     The Google Fonts link is the only network call; without it the page falls
+     back to system fonts and every command still reads correctly. -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:ital,wght@0,400;0,500;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;500;700&display=swap">
+<style>
+:root{
+  --paper:#F4F5F7; --card:#FFFFFF; --sunk:#E9ECEF;
+  --ink:#14171C; --ink2:#414852; --ink3:#6E7681;
+  --rule:#D8DCE2; --rule2:#BFC5CE;
+  --time:#8F4B0C; --time-bg:#8f4b0c14;
+  --go:#0F6249; --go-bg:#0f624914;
+  --stop:#A53226; --stop-bg:#a5322614;
+  --code-bg:#111419; --code-ink:#E3E8EF;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --paper:#0E1115; --card:#161A20; --sunk:#1D232A;
+  --ink:#EBEFF4; --ink2:#AFB8C4; --ink3:#7F8895;
+  --rule:#252C34; --rule2:#333C46;
+  --time:#DFA45A; --time-bg:#dfa45a1f;
+  --go:#54C9A2; --go-bg:#54c9a21f;
+  --stop:#EE8375; --stop-bg:#ee83751f;
+  --code-bg:#070A0D; --code-ink:#D8DFE8;
+}}
+:root[data-theme="dark"]{
+  --paper:#0E1115; --card:#161A20; --sunk:#1D232A;
+  --ink:#EBEFF4; --ink2:#AFB8C4; --ink3:#7F8895;
+  --rule:#252C34; --rule2:#333C46;
+  --time:#DFA45A; --time-bg:#dfa45a1f;
+  --go:#54C9A2; --go-bg:#54c9a21f;
+  --stop:#EE8375; --stop-bg:#ee83751f;
+  --code-bg:#070A0D; --code-ink:#D8DFE8;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);
+  font-family:Archivo,system-ui,-apple-system,sans-serif;
+  font-size:20px;line-height:1.55;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1180px;margin:0 auto;padding:0 30px 120px}
+code,.mono{font-family:"JetBrains Mono",ui-monospace,Menlo,monospace}
+code{font-size:.86em;background:var(--sunk);padding:.12em .4em;border-radius:4px;word-break:break-word}
+
+/* sticky locator so the room always knows where it is */
+.bar{position:sticky;top:0;z-index:10;background:var(--paper);
+  border-bottom:1px solid var(--rule);padding:11px 0;margin-bottom:8px}
+.bar .in{max-width:1180px;margin:0 auto;padding:0 30px;display:flex;
+  justify-content:space-between;align-items:baseline;gap:20px;
+  font-family:"JetBrains Mono",monospace;font-size:14px;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--ink3)}
+.bar b{color:var(--time)}
+
+header{padding:44px 0 26px}
+h1{font-size:clamp(38px,5.6vw,60px);font-weight:700;letter-spacing:-.03em;
+  line-height:1.02;margin:0 0 16px;text-wrap:balance}
+.dek{font-size:23px;color:var(--ink2);max-width:34ch;margin:0}
+
+/* block heading = a time marker */
+.blockhead{display:flex;align-items:baseline;gap:18px;margin:64px 0 6px;
+  padding-bottom:12px;border-bottom:3px solid var(--ink);flex-wrap:wrap}
+.blockhead .t{font-family:"JetBrains Mono",monospace;font-size:30px;font-weight:700;
+  color:var(--time);letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.blockhead h2{font-size:31px;font-weight:700;letter-spacing:-.02em;margin:0;flex:1;min-width:280px}
+.blockhead .dur{font-family:"JetBrains Mono",monospace;font-size:15px;color:var(--ink3)}
+.blockintro{font-size:20px;color:var(--ink2);margin:14px 0 4px;max-width:64ch}
+
+/* a step */
+.step{background:var(--card);border:1px solid var(--rule);border-radius:8px;
+  padding:26px 30px 28px;margin:26px 0}
+.stepno{display:inline-flex;align-items:center;gap:11px;
+  font-family:"JetBrains Mono",monospace;font-size:14px;font-weight:700;
+  letter-spacing:.13em;text-transform:uppercase;color:var(--time);
+  background:var(--time-bg);padding:5px 13px;border-radius:5px;margin-bottom:14px}
+.step h3{font-size:27px;font-weight:700;letter-spacing:-.018em;margin:0 0 12px;
+  line-height:1.2;text-wrap:balance}
+.step p{font-size:19.5px;color:var(--ink2);margin:0 0 4px;max-width:66ch}
+.step p strong,.step p b{color:var(--ink)}
+
+pre{background:var(--code-bg);color:var(--code-ink);border-radius:7px;
+  padding:19px 22px;overflow-x:auto;font-family:"JetBrains Mono",monospace;
+  font-size:17px;line-height:1.66;margin:16px 0}
+pre .c{color:#79879A}
+pre .hl{color:#E8B063}
+pre .g{color:#69D3A6}
+
+/* check / warn panels */
+.panel{border-radius:0 7px 7px 0;padding:16px 20px;margin:18px 0;font-size:19px;max-width:74ch}
+.panel .lab{font-family:"JetBrains Mono",monospace;font-size:13px;font-weight:700;
+  letter-spacing:.13em;text-transform:uppercase;display:block;margin-bottom:7px}
+.check{background:var(--go-bg);border-left:5px solid var(--go)}
+.check .lab{color:var(--go)}
+.warn{background:var(--stop-bg);border-left:5px solid var(--stop)}
+.warn .lab{color:var(--stop)}
+.why{background:var(--sunk);border-left:5px solid var(--rule2)}
+.why .lab{color:var(--ink3)}
+.why pre{margin:13px 0 11px}
+
+.tw{overflow-x:auto;border:1px solid var(--rule);border-radius:7px;background:var(--card);margin:16px 0}
+table{border-collapse:collapse;width:100%;font-size:18px}
+th{font-family:"JetBrains Mono",monospace;font-size:13px;font-weight:700;letter-spacing:.11em;
+  text-transform:uppercase;color:var(--ink3);text-align:left;padding:12px 16px;
+  border-bottom:1px solid var(--rule2);background:var(--sunk);white-space:nowrap}
+td{padding:12px 16px;border-bottom:1px solid var(--rule);vertical-align:top}
+tbody tr:last-child td{border-bottom:0}
+td.n{font-variant-numeric:tabular-nums;font-family:"JetBrains Mono",monospace;white-space:nowrap}
+
+ol.plain{padding-left:1.3em;margin:12px 0;max-width:66ch}
+ol.plain li{margin:9px 0;font-size:19.5px;color:var(--ink2)}
+ol.plain li b{color:var(--ink)}
+
+footer{margin-top:70px;padding-top:22px;border-top:1px solid var(--rule);
+  font-size:17px;color:var(--ink3);max-width:70ch}
+
+  /* ── document picker ─────────────────────────────────────────────────── */
+  .picker{background:var(--card);border:1px solid var(--rule);border-radius:8px;
+    padding:18px 22px;margin:26px 0 8px;display:flex;gap:20px;align-items:center;flex-wrap:wrap}
+  .picker label{font-family:"JetBrains Mono",monospace;font-size:13px;font-weight:700;
+    letter-spacing:.12em;text-transform:uppercase;color:var(--ink3)}
+  .picker select{font-family:Archivo,system-ui,sans-serif;font-size:19px;font-weight:600;
+    padding:8px 12px;border:1px solid var(--rule2);border-radius:6px;
+    background:var(--paper);color:var(--ink);max-width:100%}
+  .picker .sig{font-size:17px;color:var(--ink2);flex:1;min-width:220px}
+  .picker .sig b{color:var(--ink)}
+  .ref-badge{font-family:"JetBrains Mono",monospace;font-size:12px;font-weight:700;
+    letter-spacing:.1em;text-transform:uppercase;color:var(--go);background:var(--go-bg);
+    padding:4px 10px;border-radius:5px}
+  .copybtn{font-family:"JetBrains Mono",monospace;font-size:13px;font-weight:700;
+    letter-spacing:.08em;text-transform:uppercase;cursor:pointer;
+    border:1px solid var(--rule2);background:var(--sunk);color:var(--ink2);
+    padding:7px 14px;border-radius:6px}
+  .copybtn:hover{background:var(--card);color:var(--ink)}
+  .copybtn:focus-visible{outline:2px solid var(--time);outline-offset:2px}
+  [hidden]{display:none !important}
+@media(max-width:720px){
+  body{font-size:17px} .wrap{padding:0 18px 80px}
+  .blockhead .t{font-size:24px} .blockhead h2{font-size:24px}
+  .step{padding:20px 20px 22px} .step h3{font-size:22px} pre{font-size:14px}
+}
+</style>
+</head>
+<body>
+<div class="bar"><div class="in"><span>Build Agentic Workflows</span><span><b>track c · framework</b></span></div></div>
+<div class="wrap">
+<header>
+  <h1>Track C — the framework</h1>
+  <p class="dek">LlamaParse turns any document into markdown; then you extract against the same
+  schema. You are here to find out what a framework buys you, and what it charges.</p>
+</header>
+
+<div class="panel warn"><span class="lab">Read this before you start</span>
+    <b>This track has never been executed.</b> Track A was run end to end many times and every
+    number quoted for it is measured. This one was corrected from the provider documentation
+    during the pre-flight, but we had no API key, so no call has ever completed. Expect to be
+    the first person to run it. <b>Start at <code>--limit 1</code></b>, and read the error on
+    the <i>first</i> row rather than the wall of them.</div>
+
+<div class="blockhead"><span class="t">Why</span><h2>The two-stage pattern</h2></div>
+<p class="blockintro">This is the shape most real document pipelines end up in, and it is worth
+seeing even if you would not choose it today.</p>
+
+<div class="step">
+  <span class="stepno">The idea</span>
+  <h3>Parse first, extract second</h3>
+  <pre>PDF ──► LlamaParse ──► markdown
+                          │
+                          ▼
+              extract against Invoice</pre>
+  <p><b>Stage 1</b> turns <i>any</i> document into clean markdown — a scan, a rotated table, a
+  40-page contract. <b>Stage 2</b> is plain text extraction against the same
+  <code>schema.Invoice</code> every other track uses. The framework buys you stage 1. It is
+  genuinely the part you would not want to build.</p>
+  <div class="panel why"><span class="lab">Now the honest half — say this at demo time</span>
+    For <b>today's</b> documents this is arguably overkill. Our PDFs are born-digital, so the
+    text layer is already perfect and <code>pdfplumber</code> reads it for <b>free</b> — that
+    is gotcha <b>G4</b>, and Track A proves it at <b>8 s/doc for ₹0</b>. Stage 1 earns its keep
+    on documents you <i>cannot</i> read for free.
+    <br><br>The price is three unpinned packages, no version floors, and a model lookup that
+    happens <i>inside</i> the framework before a single request is sent. <b>You pay the
+    framework tax before you extract one field.</b> Open your cost column when you say it.</div>
+</div>
+
+<div class="blockhead"><span class="t">Before</span><h2>Install — at home, not at the venue</h2></div>
+
+<div class="step">
+  <span class="stepno">Step C1</span>
+  <h3>Uncomment the dependencies and install them</h3>
+  <p>The llama-index lines in <code>requirements.txt</code> are commented out <b>on purpose</b> —
+  the install is heavy and it is not fair to make forty people download it over venue wifi.</p>
+  <pre># requirements.txt — remove the leading '#' from these three
+llama-cloud-services
+llama-index-core
+llama-index-llms-anthropic
+
+pip install -r requirements.txt</pre>
+  <div class="panel check"><span class="lab">Check it worked</span>
+    <pre>python -c "import llama_cloud_services, llama_index.core; print('ok')"</pre></div>
+</div>
+
+<div class="step">
+  <span class="stepno">Step C2</span>
+  <h3>Two keys, not one</h3>
+  <pre>echo 'LLAMA_CLOUD_API_KEY=llx-...'   &gt;&gt; .env   # stage 1, LlamaParse
+echo 'ANTHROPIC_API_KEY=sk-ant-...'  &gt;&gt; .env   # stage 2, extraction</pre>
+  <p>Free LlamaParse tier at <b>cloud.llamaindex.ai</b> covers today. Stage 2 costs the same as
+  Track B, because it is the same model.</p>
+</div>
+
+<div class="blockhead"><span class="t">14:00</span><h2>Run it</h2><span class="dur">60 min</span></div>
+
+<div class="step">
+  <span class="stepno">Step C3</span>
+  <h3>One document, and expect to debug the install before the API</h3>
+  <pre>cd 03-parser
+python track_c_llamaindex.py --dataset ../02-generator/dataset --limit 1</pre>
+  <div class="panel warn"><span class="lab">Three things fail before the network does — in this order</span>
+    <b>1 · <code>ModuleNotFoundError: llama_cloud_services</code></b> — Step C1 not done. This
+    is failure number one for everybody.<br>
+    <b>2 · It raises inside <code>Anthropic(...)</code> before any request is sent.</b>
+    llama-index ships its <i>own</i> model → context-window registry and looks the id up on
+    construction. A release older than the model you name raises right there. Fix: upgrade
+    <code>llama-index-llms-anthropic</code>, or name one it knows:
+    <code>python track_c_llamaindex.py --model &lt;an id your version knows&gt; --limit 1</code><br>
+    <b>3 · Credentials.</b> Both keys, repo-root <code>.env</code>. Missing
+    <code>LLAMA_CLOUD_API_KEY</code> fails in stage 1, before extraction is ever attempted.</div>
+  <div class="panel check"><span class="lab">Check it worked</span>
+    <code>[C-llamaindex] inv_0001  OK  …s</code>, then <code>done: 1 ok, 0 errors</code>.
+    Stage 1 is a network round-trip per document, so expect this to be slower than Track B.</div>
+</div>
+
+<div class="step">
+  <span class="stepno">Step C4</span>
+  <h3>Then five, then the hundred</h3>
+  <pre>python track_c_llamaindex.py --dataset ../02-generator/dataset --limit 5
+python track_c_llamaindex.py --dataset ../02-generator/dataset</pre>
+  <div class="panel why"><span class="lab">Watch the page count, not just the clock</span>
+    LlamaParse bills by page and the free tier is finite. 100 one-page invoices is 100 pages.
+    Check your remaining quota before you run the batch, not after.</div>
+</div>
+
+<div class="step">
+  <span class="stepno">Step C5</span>
+  <h3>Grade it — same harness as everyone else</h3>
+  <pre>cd ../04-eval
+python eval.py --outputs ../03-parser/outputs_track_c.jsonl \
+               --truth   ../02-generator/dataset/ground_truth.jsonl \
+               --catchable "total_digit_swap,cgst_wrong_math,gstin_missing" \
+               --cost-per-doc 0.75</pre>
+  <div class="panel check"><span class="lab">The comparison that matters</span>
+    Put your row next to Track A's. If a two-stage framework pipeline does not beat
+    <code>pdfplumber</code> on <i>born-digital</i> PDFs, that is not a failure — it is the
+    finding. Report it. The interesting question is what would have to be true about your
+    documents for stage 1 to be worth it.</div>
+</div>
+
+<div class="panel why"><span class="lab">This sheet covers the parser only</span>
+    Everything before and after — the form server, the data factory, the trust check, reading
+    the eval report, and the improve loop — is in <b>Workshop-Steps.html</b> and is identical
+    for all three tracks. Come here at <b>14:00</b>, go back there at <b>15:00</b>.</div>
+
+<footer>
+Track C · <code>03-parser/track_c_llamaindex.py</code> · needs <code>LLAMA_CLOUD_API_KEY</code>
+and <code>ANTHROPIC_API_KEY</code>, plus an install that is not in the default setup.
+Corrected from the provider docs during the pre-flight; never executed.
+</footer>
+
+</div>
+</body>
+</html>
