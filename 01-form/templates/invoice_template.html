@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Invoice {{ r.invoice_no }}</title>
+<style>
+  /* Deliberately plain, slightly dated styling -- this should look like a real
+     SME invoice, not a design portfolio. white-space:pre-wrap keeps the chaos
+     engine's double-spaces visible to the parser. */
+  @page { size: A4; margin: 14mm; }
+  body { font-family: "DejaVu Sans", Arial, sans-serif; font-size: 11px; color: #111; margin: 0; }
+  .head { display: flex; justify-content: space-between; border-bottom: 2px solid #333; padding-bottom: 8px; }
+  .vendor { font-size: 16px; font-weight: bold; white-space: pre-wrap; }
+  .muted { color: #444; }
+  .tag { font-size: 20px; letter-spacing: 2px; color: #333; }
+  table { width: 100%; border-collapse: collapse; margin-top: 14px; }
+  th, td { border: 1px solid #777; padding: 5px 7px; text-align: left; white-space: pre-wrap; }
+  th { background: #eee; font-size: 10px; text-transform: uppercase; }
+  td.num, th.num { text-align: right; }
+  .totals { margin-top: 10px; width: 45%; margin-left: auto; }
+  .totals td { border: none; padding: 3px 7px; }
+  .totals tr.grand td { border-top: 2px solid #333; font-weight: bold; font-size: 13px; }
+  .foot { margin-top: 26px; font-size: 9px; color: #555; border-top: 1px solid #aaa; padding-top: 6px; }
+  .meta { margin-top: 8px; }
+  .meta span { display: inline-block; min-width: 240px; white-space: pre-wrap; }
+</style>
+</head>
+<body>
+  <div class="head">
+    <div>
+      <div class="vendor">{{ r.vendor }}</div>
+      <div class="muted">{{ r.city }}, India</div>
+      <div class="muted">GSTIN: {{ r.gstin if r.gstin else "" }}</div>
+    </div>
+    <div class="tag">TAX INVOICE</div>
+  </div>
+
+  <div class="meta">
+    <span><b>Invoice No:</b> {{ r.invoice_no }}</span>
+    <span><b>Date:</b> {{ r.date }}</span>
+  </div>
+
+  <table>
+    <tr><th>#</th><th>Description</th><th>HSN/SAC</th><th class="num">Qty</th><th class="num">Rate (Rs.)</th><th class="num">Amount (Rs.)</th></tr>
+    {% for it in r["items"] %}
+    <tr>
+      <td>{{ loop.index }}</td>
+      <td>{{ it.description }}</td>
+      <td>{{ it.hsn if it.hsn else "" }}</td>
+      <td class="num">{{ "%g"|format(it.qty) }}</td>
+      <td class="num">{{ it.rate|inr }}</td>
+      <td class="num">{{ it.amount|inr }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+
+  <table class="totals">
+    <tr><td>CGST @ 9%</td><td class="num">{{ r.cgst|inr }}</td></tr>
+    <tr><td>SGST @ 9%</td><td class="num">{{ r.sgst|inr }}</td></tr>
+    <tr class="grand"><td>Grand Total (Rs.)</td><td class="num">{{ r.total|inr }}</td></tr>
+  </table>
+
+  <div class="foot">
+    This is a computer generated invoice. Subject to {{ r.city }} jurisdiction. E&amp;OE.<br>
+    Payment due within 30 days of invoice date.
+  </div>
+</body>
+</html>

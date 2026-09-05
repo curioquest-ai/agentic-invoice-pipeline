@@ -1,0 +1,9 @@
+.env
+.venv/
+__pycache__/
+02-generator/dataset/
+checkpoints/dataset/
+03-parser/outputs_track_*.jsonl
+04-eval/eval_report.md
+.DS_Store
+04-eval/eval_report_v*.md

@@ -1,0 +1,21 @@
+# Core (everyone)
+fastapi
+uvicorn
+jinja2
+playwright
+pydantic>=2
+
+# Track A — free/local
+ollama
+pdfplumber
+
+# Track B — paid API
+anthropic
+
+# Track C — framework (comment out if not your track; heavier install)
+# llama-cloud-services
+# llama-index-core
+# llama-index-llms-anthropic
+
+# Checkpoint generator only (facilitator / no-browser fallback)
+# weasyprint

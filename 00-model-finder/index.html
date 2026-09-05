@@ -1,0 +1,2583 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LLM Finder — pick the right model before you build</title>
+<style>
+/* ═════════════ tokens ═════════════ */
+:root{
+  color-scheme: light;
+  --bg:#f7f6f4; --surface:#fff; --surface-2:#f4f3f0; --surface-3:#eceae5;
+  --border:#e6e4de; --border-2:#d3d0c8;
+  --ink:#111110; --ink-2:#575651; --ink-3:#8a887f;
+  --accent:#2a78d6; --accent-2:#1c5cab; --accent-soft:#eaf1fc;
+  --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a;
+  --good:#0ca30c; --warn:#fab219; --serious:#ec835a; --crit:#d03b3b;
+  --shadow-1:0 1px 2px rgba(20,19,16,.04), 0 2px 8px rgba(20,19,16,.04);
+  --shadow-2:0 4px 12px rgba(20,19,16,.07), 0 16px 40px rgba(20,19,16,.09);
+  --r:12px; --r-sm:8px;
+  --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,Helvetica,Arial,sans-serif;
+}
+@media (prefers-color-scheme:dark){ :root:not([data-theme="light"]){
+  color-scheme: dark;
+  --bg:#121211; --surface:#1a1a19; --surface-2:#212120; --surface-3:#2a2a28;
+  --border:#302f2c; --border-2:#454440;
+  --ink:#fbfbf9; --ink-2:#bdbcb3; --ink-3:#8b8981;
+  --accent:#4a94ea; --accent-2:#6ba9f0; --accent-soft:#1a2942;
+  --s1:#4a94ea; --s2:#e06a35; --s3:#22b183;
+  --shadow-1:0 1px 2px rgba(0,0,0,.3), 0 2px 8px rgba(0,0,0,.2);
+  --shadow-2:0 4px 12px rgba(0,0,0,.4), 0 16px 40px rgba(0,0,0,.35);
+}}
+:root[data-theme="dark"]{
+  color-scheme: dark;
+  --bg:#121211; --surface:#1a1a19; --surface-2:#212120; --surface-3:#2a2a28;
+  --border:#302f2c; --border-2:#454440;
+  --ink:#fbfbf9; --ink-2:#bdbcb3; --ink-3:#8b8981;
+  --accent:#4a94ea; --accent-2:#6ba9f0; --accent-soft:#1a2942;
+  --s1:#4a94ea; --s2:#e06a35; --s3:#22b183;
+  --shadow-1:0 1px 2px rgba(0,0,0,.3), 0 2px 8px rgba(0,0,0,.2);
+  --shadow-2:0 4px 12px rgba(0,0,0,.4), 0 16px 40px rgba(0,0,0,.35);
+}
+
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font:15px/1.6 var(--sans);-webkit-font-smoothing:antialiased}
+h1,h2,h3,h4{margin:0;font-weight:640;letter-spacing:-.014em;line-height:1.25}
+p{margin:0}
+a{color:var(--accent);text-underline-offset:2px}
+button{font:inherit;color:inherit;margin:0}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}
+.mono{font-family:var(--mono)}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+/* ═════════════ header ═════════════ */
+header{position:sticky;top:0;z-index:40;background:color-mix(in srgb,var(--bg) 90%,transparent);
+  backdrop-filter:saturate(1.6) blur(14px);border-bottom:1px solid var(--border)}
+.hd{max-width:1560px;margin:0 auto;padding:14px 24px;display:flex;align-items:center;gap:14px}
+.logo b{font-size:16px;font-weight:680;letter-spacing:-.02em}
+.logo span{font-size:13px;color:var(--ink-3);margin-left:9px}
+@media (max-width:720px){.logo span{display:none}}
+.hd-r{margin-left:auto;display:flex;align-items:center;gap:8px}
+.pill{display:inline-flex;align-items:center;gap:7px;font-size:12px;color:var(--ink-2);
+  background:var(--surface);border:1px solid var(--border);border-radius:99px;padding:5px 12px;white-space:nowrap}
+@media (max-width:860px){.pill{display:none}}
+.dot{width:6px;height:6px;border-radius:50%;background:var(--ink-3);flex:none}
+.dot.ok{background:var(--good)}.dot.warn{background:var(--warn)}.dot.err{background:var(--crit)}
+.dot.live{animation:pulse 1.5s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+
+/* ═════════════ buttons ═════════════ */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  background:var(--surface);border:1px solid var(--border-2);border-radius:var(--r-sm);
+  padding:8px 14px;font-size:13.5px;font-weight:520;cursor:pointer;color:var(--ink-2);
+  transition:background .13s,border-color .13s,color .13s}
+.btn:hover{background:var(--surface-2);color:var(--ink);border-color:var(--ink-3)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:580}
+.btn.primary:hover{background:var(--accent-2);border-color:var(--accent-2);color:#fff}
+.btn.block{width:100%;padding:11px 14px;font-size:14px}
+.btn.sm{padding:5px 11px;font-size:12.5px}
+.linky{background:none;border:0;padding:4px 0;font-size:13px;color:var(--accent);
+  cursor:pointer;font-weight:500}
+.linky:hover{text-decoration:underline}
+
+/* ═════════════ shell ═════════════ */
+.shell{max-width:1560px;margin:0 auto;padding:24px;
+  display:grid;grid-template-columns:370px minmax(0,1fr);gap:26px;align-items:start}
+@media (max-width:1120px){.shell{grid-template-columns:1fr;gap:20px}}
+
+/* ═════════════ brief / stepper ═════════════ */
+.brief{position:sticky;top:80px;max-height:calc(100vh - 104px);overflow-y:auto;
+  overscroll-behavior:contain;padding-right:6px;margin-right:-6px}
+@media (max-width:1120px){.brief{position:static;max-height:none}}
+.brief::-webkit-scrollbar{width:10px}
+.brief::-webkit-scrollbar-thumb{background:var(--border-2);border-radius:9px;border:3px solid var(--bg)}
+.brief-hd{display:flex;align-items:baseline;gap:10px;padding:0 4px 12px}
+.brief-hd h2{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-3)}
+.brief-hd em{margin-left:auto;font-style:normal;font-size:12px;color:var(--ink-3)}
+
+.step{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);
+  margin-bottom:10px;box-shadow:var(--shadow-1);overflow:hidden;transition:border-color .15s}
+.step[data-open="1"]{border-color:var(--border-2)}
+.step-hd{display:flex;align-items:center;gap:12px;width:100%;background:none;border:0;
+  padding:15px 16px;cursor:pointer;text-align:left}
+.step-hd:hover{background:var(--surface-2)}
+.step-n{flex:none;width:22px;height:22px;border-radius:7px;background:var(--surface-3);
+  color:var(--ink-3);font:620 11.5px/22px var(--mono);text-align:center;transition:.15s}
+.step.answered .step-n{background:var(--accent);color:#fff}
+.step-tx{flex:1;min-width:0}
+.step-q{display:block;font-size:14px;font-weight:600;letter-spacing:-.006em}
+.step-a{display:block;font-size:12.5px;color:var(--ink-3);margin-top:1px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.step[data-open="1"] .step-a{display:none}
+.chev{flex:none;width:14px;height:14px;color:var(--ink-3);transition:transform .2s}
+.step[data-open="1"] .chev{transform:rotate(180deg)}
+.step-bd{display:none;padding:2px 16px 18px}
+.step[data-open="1"] .step-bd{display:block}
+.step-help{font-size:12.5px;color:var(--ink-3);line-height:1.5;margin:-2px 0 13px}
+
+/* chips */
+.chips{display:flex;flex-wrap:wrap;gap:7px}
+.chip{border:1px solid var(--border-2);background:var(--surface);border-radius:99px;
+  padding:7px 13px;font-size:13px;cursor:pointer;color:var(--ink-2);transition:.12s;line-height:1.3}
+.chip:hover{border-color:var(--ink-3);color:var(--ink)}
+.chip[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:550}
+.chip small{opacity:.7;font-size:11.5px;margin-left:3px}
+
+.seg{display:flex;border:1px solid var(--border-2);border-radius:var(--r-sm);overflow:hidden;background:var(--surface)}
+.seg button{flex:1;border:0;background:none;padding:9px 8px;font-size:13px;cursor:pointer;
+  color:var(--ink-2);border-right:1px solid var(--border);transition:.12s}
+.seg button:last-child{border-right:0}
+.seg button:hover{background:var(--surface-2)}
+.seg button[aria-pressed="true"]{background:var(--accent);color:#fff;font-weight:570}
+
+label.row{display:flex;align-items:flex-start;gap:9px;font-size:13px;color:var(--ink-2);
+  padding:7px 0;cursor:pointer;line-height:1.45}
+label.row input{accent-color:var(--accent);width:15px;height:15px;flex:none;margin:2px 0 0}
+label.row .hint{color:var(--ink-3);font-size:12px;display:block}
+
+.f{margin-top:13px}
+.f > .lab{display:flex;align-items:center;gap:5px;font-size:12px;color:var(--ink-3);margin-bottom:5px}
+input[type=text],input[type=number],select,textarea{
+  width:100%;background:var(--surface);color:var(--ink);border:1px solid var(--border-2);
+  border-radius:var(--r-sm);padding:9px 11px;font:14px var(--sans)}
+input[type=number]{font-family:var(--mono);font-size:13.5px}
+textarea{font-family:var(--mono);font-size:12px;resize:vertical;line-height:1.5;background:var(--surface-2)}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--accent);outline-offset:-1px;border-color:transparent}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.rng{display:flex;align-items:center;gap:11px;margin-top:9px}
+.rng input[type=range]{flex:1;accent-color:var(--accent)}
+.rng b{font:620 13px var(--mono);min-width:40px;text-align:right}
+.note{font-size:12px;color:var(--ink-3);line-height:1.5;margin-top:10px;
+  padding:9px 11px;background:var(--surface-2);border-radius:var(--r-sm)}
+
+/* machine card */
+.mach{border:1px solid var(--border-2);border-radius:var(--r);overflow:hidden;background:var(--surface-2)}
+.mach-top{padding:14px 15px;background:var(--surface)}
+.mach-row{display:flex;align-items:center;gap:11px}
+.mach-ic{flex:none;width:34px;height:34px;border-radius:9px;background:var(--surface-3);
+  display:grid;place-items:center;font-size:16px}
+.mach-id{min-width:0;flex:1}
+.mach-id b{display:block;font-size:14px;font-weight:620;letter-spacing:-.008em;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mach-specs{font-size:12px;color:var(--ink-3);margin-top:8px;line-height:1.5}
+.mach-warn{font-size:11.5px;line-height:1.5;margin-top:9px;padding:8px 10px;border-radius:7px;
+  background:color-mix(in srgb,var(--warn) 12%,transparent);color:var(--ink-2)}
+.conf{font-size:10.5px;font-weight:640;letter-spacing:.03em;text-transform:uppercase;
+  padding:3px 7px;border-radius:5px;white-space:nowrap}
+.conf.est{background:color-mix(in srgb,var(--warn) 16%,transparent);color:#8a6200}
+.conf.ver{background:color-mix(in srgb,var(--good) 14%,transparent);color:var(--good)}
+.conf.man{background:var(--surface-3);color:var(--ink-3)}
+:root[data-theme="dark"] .conf.est,
+:root:not([data-theme="light"]) .conf.est{color:var(--warn)}
+.mach-act{padding:13px 15px;display:grid;gap:9px}
+.mach-alt{display:flex;gap:16px;justify-content:center}
+.mach-panel{border-top:1px solid var(--border);padding:14px 15px;background:var(--surface)}
+.steps-n{counter-reset:sx;display:grid;gap:9px;margin-bottom:10px}
+.steps-n li{counter-increment:sx;list-style:none;display:flex;gap:9px;font-size:12.5px;color:var(--ink-2);line-height:1.45}
+.steps-n li::before{content:counter(sx);flex:none;width:17px;height:17px;border-radius:50%;
+  background:var(--surface-3);color:var(--ink-3);font:620 10px/17px var(--mono);text-align:center;margin-top:2px}
+
+/* ═════════════ results ═════════════ */
+.stack{display:grid;gap:18px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--shadow-1)}
+.pad{padding:22px}
+
+/* verdict hero */
+.verdict{padding:24px 26px 22px;background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--r);box-shadow:var(--shadow-1);position:relative;overflow:hidden}
+.verdict::before{content:"";position:absolute;inset:0 0 auto;height:3px;
+  background:linear-gradient(90deg,var(--accent),var(--s3))}
+.v-kick{font-size:11.5px;font-weight:660;letter-spacing:.07em;text-transform:uppercase;color:var(--accent)}
+.v-name{font-size:27px;font-weight:660;letter-spacing:-.028em;margin:7px 0 0;display:flex;
+  align-items:center;gap:11px;flex-wrap:wrap;line-height:1.15}
+.v-meta{font-size:13.5px;color:var(--ink-3);margin-top:6px}
+.v-why{font-size:15px;line-height:1.62;color:var(--ink-2);margin:15px 0 0;max-width:66ch}
+.v-why b{color:var(--ink);font-weight:600}
+.v-nums{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));
+  gap:1px;background:var(--border);border:1px solid var(--border);border-radius:var(--r-sm);
+  overflow:hidden;margin-top:20px}
+.v-nums > div{background:var(--surface);padding:13px 15px}
+.n-l{display:flex;align-items:center;gap:5px;font-size:11.5px;color:var(--ink-3);font-weight:520}
+.n-v{font:660 21px/1.2 var(--sans);letter-spacing:-.022em;margin-top:4px}
+.n-s{font-size:12px;color:var(--ink-3);margin-top:2px}
+.v-acts{display:flex;gap:9px;flex-wrap:wrap;margin-top:18px}
+
+/* alternates */
+.alts{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media (max-width:680px){.alts{grid-template-columns:1fr}}
+.alt{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);
+  padding:16px 18px;box-shadow:var(--shadow-1);cursor:pointer;transition:.14s;text-align:left;width:100%}
+.alt:hover{border-color:var(--border-2);box-shadow:var(--shadow-2);transform:translateY(-1px)}
+.alt-k{font-size:11.5px;font-weight:640;letter-spacing:.05em;text-transform:uppercase;color:var(--ink-3)}
+.alt-n{font-size:16px;font-weight:620;letter-spacing:-.015em;margin-top:5px}
+.alt-d{font-size:13px;color:var(--ink-2);margin-top:5px;line-height:1.5}
+
+/* collapsible sections */
+details.sec{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);
+  box-shadow:var(--shadow-1);overflow:hidden}
+details.sec > summary{list-style:none;cursor:pointer;padding:16px 20px;display:flex;
+  align-items:center;gap:10px;user-select:none}
+details.sec > summary::-webkit-details-marker{display:none}
+details.sec > summary:hover{background:var(--surface-2)}
+.sec-t{font-size:14px;font-weight:620;letter-spacing:-.008em}
+.sec-c{margin-left:auto;font-size:12.5px;color:var(--ink-3);text-align:right}
+.sec-chev{width:13px;height:13px;color:var(--ink-3);transition:transform .2s;flex:none}
+details.sec[open] .sec-chev{transform:rotate(180deg)}
+.sec-bd{padding:4px 20px 20px}
+
+/* shortlist */
+.list{display:grid}
+.li{display:grid;grid-template-columns:24px minmax(0,1fr) 128px 96px 26px;gap:14px;
+  align-items:center;padding:13px 20px;border-top:1px solid var(--border);
+  cursor:pointer;background:none;border-left:0;border-right:0;border-bottom:0;width:100%;text-align:left;
+  transition:background .12s}
+.li:hover{background:var(--surface-2)}
+.li:first-child{border-top:0}
+@media (max-width:760px){.li{grid-template-columns:22px minmax(0,1fr) 82px 20px}.li .q-cell{display:none}}
+.li-r{font:620 13px/1 var(--mono);color:var(--ink-3);text-align:center}
+.li.top .li-r{color:var(--accent)}
+.li-n{font-size:14.5px;font-weight:590;letter-spacing:-.008em;display:flex;
+  align-items:center;gap:7px;flex-wrap:wrap;line-height:1.3}
+.li-m{font-size:12px;color:var(--ink-3);margin-top:3px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.li-c{text-align:right}
+.li-c b{font:640 15px/1.2 var(--sans);letter-spacing:-.014em;display:block}
+.li-c span{font-size:11px;color:var(--ink-3)}
+.li-go{color:var(--ink-3);font-size:15px;text-align:center}
+.li:hover .li-go{color:var(--accent)}
+
+.qbar{display:flex;align-items:center;gap:8px}
+.qbar .track{flex:1;height:6px;border-radius:4px;background:var(--surface-3);overflow:hidden}
+.qbar .track i{display:block;height:100%;border-radius:4px;background:var(--accent)}
+.qbar b{font:620 12px var(--mono);color:var(--ink-2);min-width:20px;text-align:right}
+
+/* tags */
+.tag{display:inline-flex;align-items:center;gap:4px;font-size:10.5px;font-weight:640;
+  letter-spacing:.025em;padding:2.5px 7px;border-radius:5px;border:1px solid var(--border-2);
+  background:var(--surface-2);color:var(--ink-2);text-transform:uppercase;white-space:nowrap}
+.tag.open{border-color:color-mix(in srgb,var(--good) 42%,transparent);color:var(--good);
+  background:color-mix(in srgb,var(--good) 9%,transparent)}
+.tag.local{border-color:color-mix(in srgb,var(--s3) 46%,transparent);color:var(--s3);
+  background:color-mix(in srgb,var(--s3) 9%,transparent)}
+.tag.warn{border-color:color-mix(in srgb,var(--serious) 46%,transparent);color:var(--serious);
+  background:color-mix(in srgb,var(--serious) 9%,transparent)}
+.tag.best{border-color:var(--accent);color:var(--accent);background:var(--accent-soft)}
+
+/* tables */
+table.t{width:100%;border-collapse:collapse;font-size:13px}
+table.t th{text-align:right;font-size:11px;font-weight:620;letter-spacing:.03em;text-transform:uppercase;
+  color:var(--ink-3);padding:0 10px 9px;border-bottom:1px solid var(--border);white-space:nowrap}
+table.t th:first-child,table.t td:first-child{text-align:left;padding-left:0}
+table.t th:last-child,table.t td:last-child{padding-right:0}
+table.t td{padding:10px;border-bottom:1px solid var(--border);text-align:right;white-space:nowrap}
+table.t tbody tr:last-child td{border-bottom:0}
+table.t td.n{font-family:var(--mono);font-size:12px}
+table.t td.wrap{white-space:normal}
+.scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+
+/* flags */
+.flag{display:flex;gap:10px;align-items:flex-start;font-size:13px;line-height:1.55;
+  padding:12px 14px;border-radius:var(--r-sm);background:var(--surface-2);
+  border:1px solid var(--border);margin-bottom:14px}
+.flag.w{border-color:color-mix(in srgb,var(--serious) 38%,transparent);
+  background:color-mix(in srgb,var(--serious) 7%,transparent)}
+.flag.g{border-color:color-mix(in srgb,var(--good) 34%,transparent);
+  background:color-mix(in srgb,var(--good) 7%,transparent)}
+.flag .ic{flex:none;font-size:14px;line-height:1.4}
+
+/* charts */
+svg .gl{stroke:var(--border)}
+svg .ax{fill:var(--ink-3);font:11.5px var(--sans)}
+svg .vl{fill:var(--ink-2);font:620 11.5px var(--mono)}
+svg .lb{fill:var(--ink);font:12.5px var(--sans)}
+.legend{display:flex;gap:18px;flex-wrap:wrap;font-size:12.5px;color:var(--ink-2);margin-bottom:12px}
+.legend i{display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:7px;vertical-align:-1px}
+.cap{font-size:12px;color:var(--ink-3);line-height:1.55;margin-top:12px}
+
+/* empty / loading */
+.empty{border:1px dashed var(--border-2);border-radius:var(--r);padding:64px 34px;text-align:center}
+.empty h3{font-size:18px;color:var(--ink);margin-bottom:9px}
+.empty p{font-size:14px;color:var(--ink-3);max-width:460px;margin:0 auto;line-height:1.65}
+.skel{height:11px;border-radius:6px;background:linear-gradient(90deg,var(--surface-2),var(--surface-3),var(--surface-2));
+  background-size:200% 100%;animation:sh 1.3s ease-in-out infinite}
+@keyframes sh{0%{background-position:200% 0}100%{background-position:-200% 0}}
+.spin{width:14px;height:14px;border:2px solid var(--border-2);border-top-color:var(--accent);
+  border-radius:50%;animation:sp .7s linear infinite;display:inline-block;vertical-align:-2px}
+@keyframes sp{to{transform:rotate(360deg)}}
+@keyframes flash{0%{background:var(--accent-soft)}100%{background:transparent}}
+.flashing{animation:flash .55s ease-out}
+
+/* help affordance */
+.help{display:inline-grid;place-items:center;width:14px;height:14px;border-radius:50%;
+  border:1px solid var(--border-2);background:none;color:var(--ink-3);
+  font:600 9.5px/1 var(--sans);cursor:help;padding:0;flex:none;vertical-align:1px}
+.help:hover,.help:focus-visible{background:var(--accent);border-color:var(--accent);color:#fff}
+#tip{position:fixed;z-index:120;max-width:290px;opacity:0;pointer-events:none;
+  transform:translateY(3px);transition:opacity .13s,transform .13s;
+  background:var(--ink);color:var(--bg);font-size:12.5px;line-height:1.5;
+  padding:9px 12px;border-radius:var(--r-sm);box-shadow:var(--shadow-2)}
+#tip.on{opacity:1;transform:translateY(0)}
+#tip b{color:var(--bg);font-weight:650}
+
+/* machine picker */
+.mach-pick{padding:14px 15px;border-top:1px solid var(--border)}
+.pick-lab{display:flex;align-items:center;gap:5px;font-size:11.5px;font-weight:600;
+  letter-spacing:.03em;text-transform:uppercase;color:var(--ink-3);margin:0 0 8px}
+#chipWrap,#memWrap{margin-top:15px}
+.chip.pk{padding:8px 12px;font-size:12.5px;border-radius:9px}
+.chip.pk.mem{min-width:52px;justify-content:center;text-align:center;font-family:var(--mono);font-size:12px}
+.mach-alt2{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:16px;
+  padding-top:13px;border-top:1px solid var(--border)}
+details.term{margin-top:14px;border-top:1px solid var(--border);padding-top:12px}
+details.term > summary{cursor:pointer;font-size:12.5px;color:var(--accent);list-style:none}
+details.term > summary::-webkit-details-marker{display:none}
+details.term > summary:hover{text-decoration:underline}
+.rf{display:inline-block}
+.btn.spinning .rf{animation:sp .8s linear infinite}
+
+/* setup page */
+#setup[hidden]{display:none}
+#setup{position:fixed;inset:0;z-index:110;background:var(--bg);overflow-y:auto}
+.su-hd{position:sticky;top:0;z-index:2;background:color-mix(in srgb,var(--bg) 92%,transparent);
+  backdrop-filter:saturate(1.6) blur(14px);border-bottom:1px solid var(--border)}
+.su-hd-in{max-width:940px;margin:0 auto;padding:14px 24px;display:flex;align-items:center;gap:14px}
+.su-wrap{max-width:940px;margin:0 auto;padding:30px 24px 80px}
+.su-kick{font-size:11.5px;font-weight:660;letter-spacing:.07em;text-transform:uppercase;color:var(--accent)}
+.su-h1{font-size:31px;font-weight:670;letter-spacing:-.03em;margin:8px 0 0;line-height:1.15}
+.su-sub{font-size:15px;color:var(--ink-2);margin-top:10px;max-width:68ch;line-height:1.6}
+.su-sec{margin-top:38px}
+.su-sec > h2{font-size:18px;letter-spacing:-.018em;margin-bottom:6px}
+.su-sec > .lead{font-size:14px;color:var(--ink-2);line-height:1.62;max-width:68ch;margin-bottom:16px}
+.su-step{display:flex;gap:14px;margin-bottom:18px}
+.su-num{flex:none;width:25px;height:25px;border-radius:8px;background:var(--accent);color:#fff;
+  font:640 12px/25px var(--mono);text-align:center}
+.su-body{flex:1;min-width:0}
+.su-body h3{font-size:14.5px;margin-bottom:6px}
+.su-body p{font-size:13.5px;color:var(--ink-2);line-height:1.6;margin-bottom:9px}
+pre.code{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-sm);
+  padding:14px 16px;overflow-x:auto;font:12.5px/1.65 var(--mono);color:var(--ink);margin:0;position:relative}
+pre.code .cm{color:var(--ink-3)}
+pre.code .st{color:var(--s3)}
+pre.code .kw{color:var(--s1)}
+.code-wrap{position:relative;margin-bottom:10px}
+.code-copy{position:absolute;top:8px;right:8px;z-index:1;font-size:11.5px;padding:4px 9px;
+  background:var(--surface-2);border:1px solid var(--border-2);border-radius:6px;cursor:pointer;color:var(--ink-2)}
+.code-copy:hover{background:var(--surface-3);color:var(--ink)}
+.tabs{display:flex;gap:2px;margin-bottom:12px;border-bottom:1px solid var(--border)}
+.tabs button{background:none;border:0;border-bottom:2px solid transparent;padding:8px 13px;
+  font-size:13px;cursor:pointer;color:var(--ink-3);margin-bottom:-1px}
+.tabs button:hover{color:var(--ink)}
+.tabs button[aria-selected="true"]{color:var(--accent);border-bottom-color:var(--accent);font-weight:580}
+.su-facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:1px;
+  background:var(--border);border:1px solid var(--border);border-radius:var(--r-sm);overflow:hidden;margin-top:22px}
+.su-facts > div{background:var(--surface);padding:13px 15px}
+.check{display:flex;gap:10px;align-items:flex-start;font-size:13.5px;color:var(--ink-2);
+  line-height:1.6;padding:9px 0;border-bottom:1px solid var(--border)}
+.check:last-child{border-bottom:0}
+.check .bx{flex:none;width:16px;height:16px;border-radius:4px;border:1.5px solid var(--border-2);margin-top:2px}
+
+/* drawer */
+.drawer[hidden]{display:none}
+.drawer{position:fixed;inset:0;z-index:100}
+.dr-back{position:absolute;inset:0;background:rgba(18,18,17,.42);opacity:0;transition:opacity .22s}
+.drawer.on .dr-back{opacity:1}
+.dr-panel{position:absolute;top:0;right:0;bottom:0;width:min(560px,100%);background:var(--bg);
+  border-left:1px solid var(--border);box-shadow:var(--shadow-2);display:flex;flex-direction:column;
+  transform:translateX(100%);transition:transform .26s cubic-bezier(.3,.8,.4,1)}
+.drawer.on .dr-panel{transform:none}
+.dr-hd{display:flex;align-items:flex-start;gap:12px;padding:20px 22px 16px;border-bottom:1px solid var(--border);
+  background:var(--surface)}
+.dr-hd h2{font-size:19px;letter-spacing:-.02em;line-height:1.25}
+.dr-hd .sub{font-size:13px;color:var(--ink-3);margin-top:4px}
+.dr-x{margin-left:auto;flex:none;width:32px;height:32px;border-radius:8px;border:1px solid var(--border-2);
+  background:var(--surface);cursor:pointer;color:var(--ink-2);font-size:16px;line-height:1;display:grid;place-items:center}
+.dr-x:hover{background:var(--surface-2);color:var(--ink)}
+.dr-bd{flex:1;overflow-y:auto;padding:20px 22px 40px}
+.dr-sec{margin-bottom:24px}
+.dr-sec > h3{font-size:12px;text-transform:uppercase;letter-spacing:.055em;color:var(--ink-3);
+  margin-bottom:11px;display:flex;align-items:center;gap:6px}
+.dl{display:grid;grid-template-columns:auto 1fr;gap:9px 18px;font-size:13.5px}
+.dl dt{color:var(--ink-3);font-size:12.5px}
+.dl dd{margin:0}
+.why{background:var(--surface-2);border-radius:var(--r-sm);padding:14px 16px;
+  font-size:13.5px;line-height:1.62;color:var(--ink-2)}
+.why b{color:var(--ink);font-weight:600}
+.foot{max-width:1560px;margin:0 auto;padding:6px 24px 44px;font-size:12px;color:var(--ink-3);line-height:1.65}
+.foot a{color:var(--ink-2)}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="hd">
+    <div class="logo"><b>LLM Finder</b><span>the right model, and what it will cost you</span></div>
+    <div class="hd-r">
+      <span class="pill" id="srcPill"><i class="dot live"></i><span id="srcTxt">loading catalog…</span></span>
+      <button class="btn sm" id="btnRefresh" title="Re-fetch every model and price from the live sources">
+        <span class="rf" aria-hidden="true">↻</span> <span id="refreshTxt">Refresh models</span></button>
+      <button class="btn sm" id="btnCopy">Copy summary</button>
+      <button class="btn sm" id="btnTheme" aria-label="Toggle colour theme">◐</button>
+    </div>
+  </div>
+</header>
+
+<div class="shell">
+  <aside class="brief">
+    <div class="brief-hd"><h2>Your brief</h2><em id="briefProg"></em></div>
+
+    <!-- 1 ─────────────────────────────────────────── -->
+    <section class="step" id="s1" data-open="1">
+      <button class="step-hd" aria-expanded="true" aria-controls="s1b">
+        <span class="step-n">1</span>
+        <span class="step-tx"><span class="step-q">What are you building?</span>
+          <span class="step-a" id="s1a">not chosen yet</span></span>
+        <svg class="chev" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M2 4.5 6 8.5l4-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+      </button>
+      <div class="step-bd" id="s1b">
+        <p class="step-help">Different jobs reward different abilities. This decides which benchmarks the
+          ranking leans on — a coding agent and a bulk classifier want almost opposite things.</p>
+        <div class="chips" id="taskChips"></div>
+        <div class="f">
+          <div class="lab">Or describe it in your own words</div>
+          <input type="text" id="taskFree" placeholder="e.g. parse 40k invoices a month into JSON">
+          <div id="taskGuess" class="note" hidden></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2 ─────────────────────────────────────────── -->
+    <section class="step" id="s2">
+      <button class="step-hd" aria-expanded="false" aria-controls="s2b">
+        <span class="step-n">2</span>
+        <span class="step-tx"><span class="step-q">How do you want to run it?</span>
+          <span class="step-a" id="s2a">Hosted API</span></span>
+        <svg class="chev" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M2 4.5 6 8.5l4-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+      </button>
+      <div class="step-bd" id="s2b">
+        <p class="step-help">Someone else's servers and a per-token bill, or your own hardware and an
+          electricity bill. "Compare both" prices the same workload each way.</p>
+        <div class="seg" id="deploySeg">
+          <button data-v="api" aria-pressed="true">Hosted API</button>
+          <button data-v="local" aria-pressed="false">My machine</button>
+          <button data-v="both" aria-pressed="false">Compare both</button>
+        </div>
+        <label class="row"><input type="checkbox" id="reqOpen">
+          <span>Open weights required
+            <span class="hint">Only models you can download and run yourself.</span></span></label>
+        <label class="row"><input type="checkbox" id="reqPrivate">
+          <span>Data must not leave my network
+            <span class="hint">Rules out every hosted API, whatever its terms.</span></span></label>
+      </div>
+    </section>
+
+    <!-- 3 ─────────────────────────────────────────── -->
+    <section class="step" id="s3">
+      <button class="step-hd" aria-expanded="false" aria-controls="s3b">
+        <span class="step-n">3</span>
+        <span class="step-tx"><span class="step-q">What will you run it on?</span>
+          <span class="step-a" id="s3a">not set</span></span>
+        <svg class="chev" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M2 4.5 6 8.5l4-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+      </button>
+      <div class="step-bd" id="s3b">
+        <p class="step-help">Memory decides which models fit; memory <em>bandwidth</em> decides how fast
+          they generate. We need both.</p>
+
+        <div class="mach">
+          <div class="mach-top">
+            <div class="mach-row">
+              <div class="mach-ic" aria-hidden="true">▣</div>
+              <div class="mach-id"><b id="machName">No machine set</b></div>
+              <span class="conf man" id="machConf">default</span>
+            </div>
+            <div class="mach-specs" id="machSpecs">Detect it, or enter the specs yourself</div>
+            <div class="mach-warn" id="machWarn" hidden></div>
+          </div>
+          <div class="mach-pick">
+            <div class="pick-lab">What kind of machine?</div>
+            <div class="chips" id="famChips"></div>
+
+            <div id="chipWrap" hidden>
+              <div class="pick-lab" id="chipLab">Which one?</div>
+              <div class="chips" id="gpuChips"></div>
+            </div>
+
+            <div id="memWrap" hidden>
+              <div class="pick-lab" id="memLab">How much memory?
+                <button class="help" data-help="vram" aria-label="Explain memory">?</button></div>
+              <div class="chips" id="memChips"></div>
+            </div>
+
+            <div class="mach-alt2">
+              <button class="btn sm" id="btnProbe"><span aria-hidden="true">⚡</span> Detect automatically</button>
+              <button class="linky" data-mach="adv">Fine-tune specs ›</button>
+            </div>
+          </div>
+
+          <div class="mach-panel" id="machAdv" hidden>
+            <div class="g2">
+              <div class="f" style="margin-top:0"><div class="lab">Memory GB</div>
+                <input type="number" id="hwVram" min="0" step="1"></div>
+              <div class="f" style="margin-top:0"><div class="lab">System RAM GB</div>
+                <input type="number" id="hwRam" min="0" step="1"></div>
+            </div>
+            <div class="g2">
+              <div class="f"><div class="lab">Bandwidth GB/s
+                <button class="help" data-help="bandwidth" aria-label="Explain bandwidth">?</button></div>
+                <input type="number" id="hwBw" min="0" step="1"></div>
+              <div class="f"><div class="lab">Load draw W</div>
+                <input type="number" id="hwWatt" min="0" step="5"></div>
+            </div>
+            <label class="row"><input type="checkbox" id="hwUnified">
+              <span>Unified memory <span class="hint">Apple Silicon and integrated GPUs share
+                memory with the OS, so not all of it is usable.</span></span></label>
+
+            <details class="term">
+              <summary>Read the specs off my terminal instead</summary>
+              <ol class="steps-n" style="margin-top:11px">
+                <li>Copy this command</li><li>Run it in Terminal</li><li>Paste what it prints back</li>
+              </ol>
+              <textarea id="shellCmd" rows="4" readonly aria-label="Command to run"></textarea>
+              <div style="display:flex;gap:8px;margin:9px 0">
+                <button class="btn sm" id="btnCopyCmd">Copy command</button>
+                <button class="btn sm" id="btnWinCmd">Windows</button>
+              </div>
+              <textarea id="shellOut" rows="4" placeholder="paste the output here…" aria-label="Command output"></textarea>
+              <button class="btn sm primary" id="btnParseShell" style="margin-top:9px">Use these specs</button>
+              <div class="note" id="shellMsg">Nothing is uploaded — the text is parsed inside this page.</div>
+            </details>
+          </div>
+        </div>
+
+        <div class="g2" style="margin-top:13px">
+          <div class="f" style="margin-top:0"><div class="lab">Electricity $/kWh</div>
+            <input type="number" id="kwh" min="0" step="0.01" value="0.15"></div>
+          <div class="f" style="margin-top:0"><div class="lab">Hardware to buy $
+            <button class="help" data-help="capex" aria-label="Explain hardware cost">?</button></div>
+            <input type="number" id="hwCost" min="0" step="50" value="0"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 4 ─────────────────────────────────────────── -->
+    <section class="step" id="s4">
+      <button class="step-hd" aria-expanded="false" aria-controls="s4b">
+        <span class="step-n">4</span>
+        <span class="step-tx"><span class="step-q">How much will you run through it?</span>
+          <span class="step-a" id="s4a">1,000 req/day</span></span>
+        <svg class="chev" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M2 4.5 6 8.5l4-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+      </button>
+      <div class="step-bd" id="s4b">
+        <p class="step-help">Volume sets the monthly bill, and shifts the ranking: at scale a small price
+          gap outweighs a small quality gap.</p>
+        <div class="chips" id="scalePresets"></div>
+        <div class="g3" style="margin-top:13px">
+          <div class="f" style="margin-top:0"><div class="lab">Requests/day</div>
+            <input type="number" id="vReq" min="0" step="10" value="1000"></div>
+          <div class="f" style="margin-top:0"><div class="lab">Input tok
+            <button class="help" data-help="intok" aria-label="Explain input tokens">?</button></div>
+            <input type="number" id="vIn" min="0" step="100" value="4000"></div>
+          <div class="f" style="margin-top:0"><div class="lab">Output tok</div>
+            <input type="number" id="vOut" min="0" step="50" value="700"></div>
+        </div>
+        <div class="rng">
+          <span style="font-size:12.5px;color:var(--ink-3);white-space:nowrap;display:flex;align-items:center;gap:5px">
+            Cacheable <button class="help" data-help="cache" aria-label="Explain cacheable prefix">?</button></span>
+          <input type="range" id="vCache" min="0" max="95" step="5" value="0" aria-label="Cacheable share of input">
+          <b id="vCacheL">0%</b>
+        </div>
+        <div class="note" id="volNote"></div>
+      </div>
+    </section>
+
+    <!-- 5 ─────────────────────────────────────────── -->
+    <section class="step" id="s5">
+      <button class="step-hd" aria-expanded="false" aria-controls="s5b">
+        <span class="step-n">5</span>
+        <span class="step-tx"><span class="step-q">Anything it must have?</span>
+          <span class="step-a" id="s5a">128K context</span></span>
+        <svg class="chev" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M2 4.5 6 8.5l4-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+      </button>
+      <div class="step-bd" id="s5b">
+        <p class="step-help">These are eliminations, not preferences. A model that fails one is dropped
+          however well it scores.</p>
+        <div class="g2">
+          <div class="f" style="margin-top:0"><div class="lab">Minimum context
+            <button class="help" data-help="context" aria-label="Explain context window">?</button></div>
+            <select id="cMinCtx">
+              <option value="0">no minimum</option><option value="32000">32K</option>
+              <option value="128000" selected>128K</option><option value="200000">200K</option>
+              <option value="500000">500K</option><option value="1000000">1M</option>
+            </select></div>
+          <div class="f" style="margin-top:0"><div class="lab">Latency</div>
+            <select id="cLat">
+              <option value="none">not sensitive</option><option value="mid">interactive</option>
+              <option value="hard">realtime UI</option>
+            </select></div>
+        </div>
+        <div class="f"><div class="lab">Required capabilities</div>
+          <div class="chips" id="capChips"></div></div>
+      </div>
+    </section>
+
+    <p style="font-size:12px;color:var(--ink-3);padding:6px 4px 30px;line-height:1.55">
+      Only question 1 is required — everything else has a sensible default, and results update as you change them.</p>
+  </aside>
+
+  <main id="out"></main>
+</div>
+
+<div class="foot" id="foot"></div>
+
+<div id="setup" hidden>
+  <div class="su-hd"><div class="su-hd-in">
+    <button class="btn sm" id="suBack">‹ Back to results</button>
+    <div style="margin-left:auto;display:flex;gap:8px">
+      <button class="btn sm" id="suCopy">Copy as markdown</button>
+    </div>
+  </div></div>
+  <div class="su-wrap" id="suBody"></div>
+</div>
+
+<div class="drawer" id="drawer" hidden>
+  <div class="dr-back" data-close></div>
+  <div class="dr-panel" role="dialog" aria-modal="true" aria-labelledby="drTitle">
+    <div class="dr-hd">
+      <div><h2 id="drTitle"></h2><div class="sub" id="drSub"></div></div>
+      <button class="dr-x" id="drClose" aria-label="Close details">✕</button>
+    </div>
+    <div class="dr-bd" id="drBody"></div>
+  </div>
+</div>
+
+<div id="tip" role="tooltip"></div>
+
+<script>
+"use strict";
+"use strict";
+/* ═══════════════════════════════════════════════════════════════════════
+   1. DATA — live catalog fetch, normalization, cache
+   ═══════════════════════════════════════════════════════════════════════ */
+const SRC = {
+  or:   "https://openrouter.ai/api/v1/models",
+  fp:   "https://www.aipricing.guru/api/pricing.json",
+  hf:   id => "https://huggingface.co/api/models/" + id
+};
+const CACHE_KEY = "llmfinder.catalog.v1";
+const CACHE_TTL = 24 * 3600 * 1000;
+
+const norm = s => (s || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+
+const PROVIDER_LABEL = {
+  openai:"OpenAI", anthropic:"Anthropic", google:"Google", "meta-llama":"Meta", meta:"Meta",
+  "x-ai":"xAI", qwen:"Alibaba", deepseek:"DeepSeek", mistralai:"Mistral", "z-ai":"Z.ai",
+  moonshotai:"Moonshot", minimax:"MiniMax", nvidia:"NVIDIA", cohere:"Cohere", amazon:"Amazon",
+  microsoft:"Microsoft", "ibm-granite":"IBM", tencent:"Tencent", "bytedance-seed":"ByteDance",
+  perplexity:"Perplexity", inclusionai:"InclusionAI", liquid:"LiquidAI", upstage:"Upstage",
+  ai21:"AI21", thinkingmachines:"Thinking Machines", poolside:"Poolside", sakana:"Sakana",
+  inception:"Inception", nousresearch:"Nous", allenai:"AI2", "open-r1":"Open R1"
+};
+
+/* Variant suffixes OpenRouter appends to the same underlying model. */
+const VARIANTS = new Set(["batch","free","thinking","extended","online","nitro","floor","exacto","preview"]);
+
+function splitVariant(id){
+  const i = id.indexOf(":");
+  return i < 0 ? [id, null] : [id.slice(0,i), id.slice(i+1)];
+}
+
+/* Parameter counts parsed out of a slug: 27b, 2.4t, 30b-a3b (total-active). */
+function parseParams(str){
+  if(!str) return null;
+  /* Split on separators but NOT on "." — "2.4t" is one token (2.4 trillion),
+     while "qwen3.8" stays whole and fails the numeric match, as it should. */
+  const toks = str.toLowerCase().split(/[-_/\s]+/);
+  let total = null, active = null;
+  for(const t of toks){
+    let m = /^(\d+(?:\.\d+)?)(b|t)$/.exec(t);
+    if(m && total === null){ total = parseFloat(m[1]) * (m[2] === "t" ? 1000 : 1); continue; }
+    m = /^a(\d+(?:\.\d+)?)(b|t)?$/.exec(t);
+    if(m && active === null){ active = parseFloat(m[1]) * (m[2] === "t" ? 1000 : 1); continue; }
+    m = /^(\d+(?:\.\d+)?)b(\d+)e$/.exec(t);   // 17b-16e style
+    if(m && active === null){ active = parseFloat(m[1]); continue; }
+  }
+  if(total === null && active === null) return null;
+  if(total === null) total = active;
+  return { total, active: active ?? total };
+}
+
+function normalizeCatalog(orRaw, fpRaw){
+  /* first-party index, by normalized id and name */
+  const fpIdx = new Map();
+  const fpModels = (fpRaw && fpRaw.models) || [];
+  for(const m of fpModels){
+    for(const k of [m.id, m.name]){
+      const n = norm(k);
+      if(n && !fpIdx.has(n)) fpIdx.set(n, m);
+    }
+  }
+
+  const byBase = new Map();
+  for(const m of orRaw){
+    if(m.id.startsWith("~")) continue;               // "latest" alias rows duplicate real models
+    const [base, variant] = splitVariant(m.id);
+    if(variant && !VARIANTS.has(variant) && !byBase.has(base)) { /* keep as its own model */ }
+
+    const p = m.pricing || {};
+    const num = v => (v === undefined || v === null || v === "") ? null : parseFloat(v);
+    const inP = num(p.prompt), outP = num(p.completion);
+    if(inP === null || outP === null) continue;
+
+    if(variant === "batch" && byBase.has(base)){
+      byBase.get(base).batch = { inP, outP };
+      continue;
+    }
+    if(variant === "free" && byBase.has(base)){
+      byBase.get(base).hasFree = true;
+      continue;
+    }
+    if(variant && VARIANTS.has(variant) && byBase.has(base)) continue;
+
+    const slug = base.includes("/") ? base.split("/")[1] : base;
+    const org  = base.includes("/") ? base.split("/")[0] : "";
+    const arch = m.architecture || {};
+    const inMods = arch.input_modalities || [];
+    const sp = m.supported_parameters || [];
+    const aa = (m.benchmarks && m.benchmarks.artificial_analysis) || null;
+
+    const cleanName = (m.name || slug).replace(/^[^:]+:\s*/, "").trim();
+    const params = parseParams(m.hugging_face_id || slug);
+
+    const rec = {
+      id: base,
+      slug, org,
+      name: cleanName,
+      provider: PROVIDER_LABEL[org] || (org ? org[0].toUpperCase()+org.slice(1) : "—"),
+      ctx: m.context_length || (m.top_provider && m.top_provider.context_length) || 0,
+      maxOut: (m.top_provider && m.top_provider.max_completion_tokens) || null,
+      inP, outP,
+      cacheRead: num(p.input_cache_read),
+      cacheWrite: num(p.input_cache_write),
+      overrides: Array.isArray(p.overrides) ? p.overrides.map(o => ({
+        min: o.min_prompt_tokens || 0, inP: num(o.prompt), outP: num(o.completion),
+        cacheRead: num(o.input_cache_read)
+      })) : [],
+      batch: null, hasFree: inP === 0 && outP === 0,
+      mods: {
+        image: inMods.includes("image"), audio: inMods.includes("audio"),
+        video: inMods.includes("video"), file: inMods.includes("file")
+      },
+      caps: {
+        tools: sp.includes("tools"),
+        structured: sp.includes("structured_outputs") || sp.includes("response_format"),
+        reasoning: sp.includes("reasoning") || sp.includes("reasoning_effort")
+      },
+      open: !!m.hugging_face_id,
+      hfId: m.hugging_face_id || null,
+      params,
+      bench: aa ? {
+        intel:  aa.intelligence_index ?? null,
+        coding: aa.coding_index ?? null,
+        agentic: aa.agentic_index ?? null
+      } : null,
+      created: m.created || 0,
+      fp: null
+    };
+
+    /* attach first-party price where we can match it */
+    const cands = [norm(slug), norm(cleanName), norm((m.canonical_slug||"").split("/").pop())];
+    for(const c of cands){
+      const hit = fpIdx.get(c);
+      if(hit){
+        const q = hit.pricing || {};
+        rec.fp = {
+          inP: q.inputPerM != null ? q.inputPerM/1e6 : null,
+          outP: q.outputPerM != null ? q.outputPerM/1e6 : null,
+          cacheRead: q.cachedInputPerM != null ? q.cachedInputPerM/1e6 : null,
+          longCtx: q.longContext ? {
+            min: q.longContext.thresholdInputTokens,
+            inP: q.longContext.inputPerM/1e6, outP: q.longContext.outputPerM/1e6
+          } : null,
+          status: hit.status || null,
+          url: hit.sourceUrl || null,
+          provider: hit.provider || null
+        };
+        break;
+      }
+    }
+    byBase.set(base, rec);
+  }
+
+  const list = [...byBase.values()];
+
+  /* A ":batch" row is not always a discount — for some providers it is priced
+     above the base rate. Only keep it where it actually saves money. */
+  for(const m of list){
+    if(m.batch && !(m.batch.inP < m.inP || m.batch.outP < m.outP)) m.batch = null;
+  }
+
+  /* normalize benchmark indices to 0-100 against the catalog max */
+  const mx = { intel:0, coding:0, agentic:0 };
+  for(const m of list) if(m.bench) for(const k in mx) if(m.bench[k] != null) mx[k] = Math.max(mx[k], m.bench[k]);
+  for(const m of list){
+    if(!m.bench) continue;
+    /* Each index is normalized against its own catalog max — they are published on
+       different scales. Indices are frequently missing one or two of the three;
+       nothing is substituted for a missing one, it stays null and the scorer
+       renormalizes around it. */
+    m.q = {
+      intel:   m.bench.intel   != null && mx.intel   ? m.bench.intel  /mx.intel  *100 : null,
+      coding:  m.bench.coding  != null && mx.coding  ? m.bench.coding /mx.coding *100 : null,
+      agentic: m.bench.agentic != null && mx.agentic ? m.bench.agentic/mx.agentic*100 : null
+    };
+    m.hasQ = m.q.intel != null || m.q.coding != null || m.q.agentic != null;
+  }
+  return { list, max: mx };
+}
+
+const STATE = {
+  catalog: [], loaded:false, sources:{}, fetchedAt:null,
+  task:null, taskFree:"",
+  deploy:"api", reqOpen:false, reqPrivate:false,
+  hwMode:"probe",
+  hw:{ gpu:"RTX 4090", vram:24, ram:32, bw:1008, watt:450, unified:false, note:null },
+  kwh:0.15, hwCost:0,
+  vol:{ req:1000, inTok:4000, outTok:700, cache:0 },
+  minCtx:128000, latency:"none", caps:new Set(),
+  hfCache:{}
+};
+
+async function loadCatalog(){
+  /* cached? */
+  try{
+    const c = JSON.parse(localStorage.getItem(CACHE_KEY) || "null");
+    if(c && Date.now() - c.t < CACHE_TTL && c.or){
+      apply(c.or, c.fp, c.t, true);
+      refreshInBackground();
+      return;
+    }
+  }catch(e){/* ignore */}
+  await fetchFresh();
+}
+
+async function fetchFresh(force){
+  /* `force` bypasses any HTTP cache too, so "Refresh models" really re-reads
+     the sources rather than replaying a browser-cached response. */
+  const opt = force ? { cache: "reload" } : undefined;
+  const [orR, fpR] = await Promise.allSettled([
+    fetch(SRC.or, opt).then(r => r.ok ? r.json() : Promise.reject(r.status)),
+    fetch(SRC.fp, opt).then(r => r.ok ? r.json() : Promise.reject(r.status))
+  ]);
+  const orData = orR.status === "fulfilled" ? orR.value.data : null;
+  const fpData = fpR.status === "fulfilled" ? fpR.value : null;
+
+  STATE.sources.or = orR.status === "fulfilled" ? "ok" : "fail";
+  STATE.sources.fp = fpR.status === "fulfilled" ? "ok" : "fail";
+
+  if(!orData){
+    STATE.loaded = false;
+    srcPill("err", "catalog unavailable — check your connection");
+    render();
+    return;
+  }
+  const t = Date.now();
+  try{ localStorage.setItem(CACHE_KEY, JSON.stringify({ t, or:orData, fp:fpData })); }catch(e){}
+  apply(orData, fpData, t, false);
+}
+
+function refreshInBackground(){
+  fetch(SRC.or).then(r => r.json()).then(j => {
+    fetch(SRC.fp).then(r => r.ok ? r.json() : null).catch(() => null).then(fp => {
+      const t = Date.now();
+      try{ localStorage.setItem(CACHE_KEY, JSON.stringify({ t, or:j.data, fp })); }catch(e){}
+      apply(j.data, fp, t, false);
+      if(STATE.task) render();
+    });
+  }).catch(() => {});
+}
+
+const ago = t => {
+  const s = (Date.now() - t) / 1000;
+  return s < 90 ? "just now" : s < 3600 ? Math.round(s / 60) + "m ago"
+       : s < 86400 ? Math.round(s / 3600) + "h ago" : Math.round(s / 86400) + "d ago";
+};
+
+function apply(orData, fpData, t, fromCache){
+  const prev = STATE.catalog.length;
+  const { list } = normalizeCatalog(orData, fpData);
+  STATE.catalog = list;
+  STATE.loaded = true;
+  STATE.fetchedAt = t;
+  STATE.delta = prev ? list.length - prev : 0;
+  const fpCount = list.filter(m => m.fp).length;
+  const openCount = list.filter(m => m.open).length;
+  srcPill("ok", `${list.length} models · ${openCount} open · updated ${ago(t)}`);
+  document.getElementById("foot").innerHTML =
+    `Catalog fetched live ${fromCache ? "from your 24h local cache, last refreshed " : ""}` +
+    `<b>${new Date(t).toLocaleString()}</b> from ` +
+    `<a href="${SRC.or}" target="_blank" rel="noopener">OpenRouter</a> (catalog, pricing, benchmark indices) and ` +
+    `<a href="${SRC.fp}" target="_blank" rel="noopener">AI Pricing Guru</a> (first-party provider list prices). ` +
+    `Parameter counts and licenses for open models come from the ` +
+    `<a href="https://huggingface.co/api/models" target="_blank" rel="noopener">Hugging Face API</a>, fetched on demand. ` +
+    `Benchmark indices are Artificial Analysis intelligence / coding / agentic, surfaced by OpenRouter. ` +
+    `<br>No model, lab or provider is promoted: ranking is a pure function of your answers and the numbers above. ` +
+    `Prices change without notice — verify against the provider before you commit budget. ` +
+    `Throughput and VRAM figures for local runs are physics-based estimates, not measurements.`;
+  render();
+}
+
+function srcPill(cls, txt){
+  const d = document.querySelector("#srcPill .dot");
+  d.className = "dot " + cls;
+  document.getElementById("srcTxt").textContent = txt;
+}
+
+/* Lazily enrich the shortlisted open models with exact params + license from HF. */
+async function enrichHF(models){
+  const jobs = models.filter(m => m.open && m.hfId && !(m.hfId in STATE.hfCache)).slice(0, 12);
+  if(!jobs.length) return false;
+  await Promise.all(jobs.map(async m => {
+    try{
+      const r = await fetch(SRC.hf(m.hfId));
+      if(!r.ok) throw 0;
+      const j = await r.json();
+      const total = j.safetensors && j.safetensors.total ? j.safetensors.total / 1e9 : null;
+      const lic = (j.tags || []).find(t => t.startsWith("license:"));
+      STATE.hfCache[m.hfId] = {
+        total,
+        license: lic ? lic.slice(8) : null,
+        experts: j.config && j.config.num_experts_per_tok || null,
+        downloads: j.downloads || null
+      };
+    }catch(e){ STATE.hfCache[m.hfId] = { total:null, license:null }; }
+  }));
+  return true;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   2. HARDWARE — probe, shell parse, accelerator table
+   ═══════════════════════════════════════════════════════════════════════ */
+/* bw = memory bandwidth GB/s (what decode speed is actually bound by),
+   w = draw under load, idle = idle draw. */
+const GPUS = [
+  { n:"NVIDIA H100 80GB",   vram:80,  bw:3350, w:700, idle:60 },
+  { n:"NVIDIA A100 80GB",   vram:80,  bw:2039, w:400, idle:50 },
+  { n:"NVIDIA A100 40GB",   vram:40,  bw:1555, w:400, idle:50 },
+  { n:"NVIDIA RTX 6000 Ada",vram:48,  bw:960,  w:300, idle:20 },
+  { n:"NVIDIA RTX 5090",    vram:32,  bw:1792, w:575, idle:25 },
+  { n:"NVIDIA RTX 4090",    vram:24,  bw:1008, w:450, idle:22 },
+  { n:"NVIDIA RTX 5080",    vram:16,  bw:960,  w:360, idle:18 },
+  { n:"NVIDIA RTX 4080",    vram:16,  bw:717,  w:320, idle:18 },
+  { n:"NVIDIA RTX 5070 Ti", vram:16,  bw:896,  w:300, idle:16 },
+  { n:"NVIDIA RTX 5070",    vram:12,  bw:672,  w:250, idle:15 },
+  { n:"NVIDIA RTX 4070 Ti", vram:12,  bw:504,  w:285, idle:15 },
+  { n:"NVIDIA RTX 5060 Ti", vram:16,  bw:448,  w:180, idle:12 },
+  { n:"NVIDIA RTX 4060 Ti", vram:8,   bw:288,  w:160, idle:12 },
+  { n:"NVIDIA RTX 3090",    vram:24,  bw:936,  w:350, idle:20 },
+  { n:"AMD RX 7900 XTX",    vram:24,  bw:960,  w:355, idle:20 },
+  { n:"Apple M5 Max",       vram:0,   bw:600,  w:70,  idle:8,  uni:true },
+  { n:"Apple M5 Pro",       vram:0,   bw:300,  w:45,  idle:6,  uni:true },
+  { n:"Apple M5",           vram:0,   bw:160,  w:28,  idle:4,  uni:true },
+  { n:"Apple M4 Max",       vram:0,   bw:546,  w:65,  idle:8,  uni:true },
+  { n:"Apple M4 Pro",       vram:0,   bw:273,  w:42,  idle:6,  uni:true },
+  { n:"Apple M4",           vram:0,   bw:120,  w:25,  idle:4,  uni:true },
+  { n:"Apple M3 Ultra",     vram:0,   bw:819,  w:90,  idle:12, uni:true },
+  { n:"Apple M3 Max",       vram:0,   bw:400,  w:60,  idle:8,  uni:true },
+  { n:"Apple M2 Ultra",     vram:0,   bw:800,  w:90,  idle:12, uni:true },
+  { n:"Apple M2 Max",       vram:0,   bw:400,  w:55,  idle:8,  uni:true },
+  { n:"Apple M1 Max",       vram:0,   bw:400,  w:55,  idle:8,  uni:true },
+  { n:"CPU only / integrated", vram:0, bw:50,  w:65,  idle:15, uni:true }
+];
+
+const SHELL_UNIX =
+`printf 'os=%s\\ncores=%s\\n' "$(uname -s)" "$(getconf _NPROCESSORS_ONLN)"
+printf 'cpu=%s\\n' "$(sysctl -n machdep.cpu.brand_string 2>/dev/null || sed -n 's/model name[ \\t]*: //p' /proc/cpuinfo | head -1)"
+printf 'ram_gb=%s\\n' "$(sysctl -n hw.memsize 2>/dev/null | awk '{print int($1/1073741824)}' || awk '/MemTotal/{print int($2/1048576)}' /proc/meminfo)"
+nvidia-smi --query-gpu=name,memory.total --format=csv,noheader 2>/dev/null | awk -F', ' '{printf "gpu=%s\\nvram_gb=%d\\n",$1,$2/1024}'
+system_profiler SPDisplaysDataType 2>/dev/null | awk -F': ' '/Chipset Model/{print "gpu="$2; exit}'`;
+
+const SHELL_WIN =
+`"os=Windows"; "cores=$env:NUMBER_OF_PROCESSORS"
+"ram_gb=" + [math]::Round((Get-CimInstance Win32_ComputerSystem).TotalPhysicalMemory/1GB)
+Get-CimInstance Win32_VideoController | %{ "gpu=$($_.Name)"; "vram_gb=" + [math]::Round($_.AdapterRAM/1GB) }`;
+
+function matchGpu(name){
+  if(!name) return null;
+  const s = name.toLowerCase();
+  let best = null, bestLen = 0;
+  for(const g of GPUS){
+    /* match on the distinctive tail of the catalog name, e.g. "rtx 4090", "m4 max" */
+    const key = g.n.toLowerCase().replace(/^(nvidia|amd|apple)\s+/, "");
+    if(s.includes(key) && key.length > bestLen){ best = g; bestLen = key.length; }
+  }
+  return best;
+}
+
+async function probeMachine(){
+  const hw = { note:[] };
+  hw.cores = navigator.hardwareConcurrency || null;
+  const dm = navigator.deviceMemory || null;
+  const plat = (navigator.userAgentData && navigator.userAgentData.platform) || navigator.platform || "";
+
+  let adapterName = null;
+  if(navigator.gpu){
+    try{
+      const ad = await navigator.gpu.requestAdapter();
+      if(ad){
+        const info = ad.info || (ad.requestAdapterInfo ? await ad.requestAdapterInfo() : {});
+        adapterName = [info.vendor, info.architecture, info.device, info.description]
+          .filter(Boolean).join(" ").trim() || null;
+        hw.maxBuf = ad.limits && ad.limits.maxBufferSize ? ad.limits.maxBufferSize / 1e9 : null;
+      }
+    }catch(e){/* no webgpu */}
+  }
+
+  const isMac = /mac/i.test(plat);
+  let g = matchGpu(adapterName);
+  if(!g && isMac){
+    /* WebGPU on Apple reports "apple" + a generation; fall back on core count */
+    g = GPUS.find(x => x.n === "Apple M4 Pro");
+    hw.note.push("Apple Silicon detected but the browser does not report the exact chip — assumed M4 Pro class. Correct it below.");
+  }
+  if(!g){
+    g = GPUS.find(x => x.n === "CPU only / integrated");
+    hw.note.push("No discrete GPU reported by WebGPU" + (adapterName ? ` (adapter: ${adapterName})` : "") + ".");
+  }
+
+  const ram = dm ? Math.max(dm, 8) : 16;
+  if(dm && dm <= 8) hw.note.push("Browsers cap reported RAM at 8 GB — if you have more, set it below or use the paste path.");
+
+  return {
+    gpu: g.n, unified: !!g.uni,
+    vram: g.uni ? ram : g.vram,
+    ram, bw: g.bw, watt: g.w, idle: g.idle,
+    note: hw.note.join(" "), adapter: adapterName, cores: hw.cores
+  };
+}
+
+function parseShell(text){
+  const kv = {};
+  text.split(/\r?\n/).forEach(l => {
+    const m = /^\s*([a-z_]+)\s*=\s*(.+?)\s*$/i.exec(l);
+    if(m) kv[m[1].toLowerCase()] = m[2].trim();
+  });
+  if(!Object.keys(kv).length) return null;
+
+  const gpuName = kv.gpu || kv.cpu || "";
+  const isApple = /apple|^m[1-9]\b/i.test(gpuName) || /apple/i.test(kv.cpu || "");
+  let g = matchGpu(gpuName) || matchGpu(kv.cpu) ||
+          GPUS.find(x => x.n === (isApple ? "Apple M4 Pro" : "CPU only / integrated"));
+
+  const ram = kv.ram_gb ? parseFloat(kv.ram_gb) : 16;
+  const vramRaw = kv.vram_gb ? parseFloat(kv.vram_gb) : null;
+  const unified = !!g.uni;
+
+  return {
+    gpu: g.n, unified,
+    vram: unified ? ram : (vramRaw || g.vram),
+    ram, bw: g.bw, watt: g.w, idle: g.idle,
+    note: `Parsed: ${gpuName || "unknown accelerator"}${kv.ram_gb ? `, ${kv.ram_gb} GB RAM` : ""}` +
+          (vramRaw ? `, ${vramRaw} GB VRAM` : unified ? ", unified memory" : ""),
+    detectedName: gpuName
+  };
+}
+
+/* ── local-fit maths ─────────────────────────────────────────
+   VRAM = weights + KV cache. Decode speed is memory-bandwidth bound:
+   tok/s ≈ bandwidth × efficiency / bytes-read-per-token (active weights). */
+const QUANTS = [
+  { k:"Q4_K_M", bits:4.5, quality:"~1-2% quality loss, the default choice" },
+  { k:"Q5_K_M", bits:5.5, quality:"marginally better, ~20% more memory" },
+  { k:"Q8_0",   bits:8.5, quality:"near-lossless" },
+  { k:"FP16",   bits:16,  quality:"reference precision" }
+];
+const BW_EFF = 0.72;
+
+function kvOverhead(ctx){
+  /* +25% at 8K scaling to +100% at 32K and beyond */
+  const c = Math.max(2000, Math.min(ctx || 8000, 32000));
+  return 1.25 + (c - 8000) / (32000 - 8000) * 0.75;
+}
+
+function localFit(model, hw, ctxWanted){
+  const hf = model.hfId ? STATE.hfCache[model.hfId] : null;
+  const totalB = (hf && hf.total) || (model.params && model.params.total) || null;
+  if(!totalB) return null;
+  const activeB = (model.params && model.params.active) || totalB;
+  const avail = hw.unified
+    ? Math.max(0, hw.vram * 0.75)          /* macOS reserves a chunk for the OS */
+    : hw.vram;
+  const kv = kvOverhead(ctxWanted);
+
+  const opts = QUANTS.map(q => {
+    const weights = totalB * q.bits / 8;
+    const need = weights * kv;
+    const activeGB = activeB * q.bits / 8;
+    const tps = activeGB > 0 ? (hw.bw * BW_EFF) / activeGB : 0;
+    let verdict = "no";
+    if(need <= avail * 0.95) verdict = "yes";
+    else if(need <= avail + Math.max(0, hw.ram - 8) * 0.6) verdict = "offload";
+    return { ...q, weights, need, activeGB, tps: verdict === "offload" ? tps * 0.15 : tps, verdict };
+  });
+
+  const best = opts.find(o => o.verdict === "yes") || opts.find(o => o.verdict === "offload") || null;
+  return { totalB, activeB, avail, kv, opts, best, license: hf && hf.license };
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   3. COST
+   ═══════════════════════════════════════════════════════════════════════ */
+function apiMonthly(m, vol, useFirstParty){
+  const src = (useFirstParty && m.fp && m.fp.inP != null) ? m.fp : m;
+  let inP = src.inP, outP = src.outP;
+  let cacheP = src.cacheRead != null ? src.cacheRead : inP;
+
+  /* long-context tier */
+  const ov = (m.overrides || []).filter(o => vol.inTok >= o.min).sort((a,b) => b.min - a.min)[0];
+  if(ov){ inP = ov.inP ?? inP; outP = ov.outP ?? outP; cacheP = ov.cacheRead ?? cacheP; }
+  else if(src.longCtx && vol.inTok >= src.longCtx.min){ inP = src.longCtx.inP; outP = src.longCtx.outP; }
+
+  const f = vol.cache / 100;
+  const perReq = vol.inTok * (1 - f) * inP + vol.inTok * f * cacheP + vol.outTok * outP;
+  return { month: perReq * vol.req * 30, perReq, inP, outP, cacheP };
+}
+
+function localMonthly(fit, hw, vol, kwh, dedicated){
+  if(!fit || !fit.best || fit.best.verdict === "no") return null;
+  const tps = fit.best.tps;
+  const outPerDay = vol.req * vol.outTok;
+  const genSecPerDay = tps > 0 ? outPerDay / tps : Infinity;
+  /* prefill is roughly an order of magnitude faster per token than decode */
+  const preSecPerDay = tps > 0 ? (vol.req * vol.inTok) / (tps * 10) : Infinity;
+  const busySec = genSecPerDay + preSecPerDay;
+  const feasible = busySec <= 86400 * 0.8;
+  const machines = Math.max(1, Math.ceil(busySec / (86400 * 0.8)));
+  const busy = Math.min(busySec, 86400);
+  const idle = hw.idle || 15;
+
+  /* Charge only the power the inference actually adds. On a machine you already
+     own and leave running, that is the draw above idle — billing it the full
+     idle load would blame the LLM for electricity you spend anyway. A machine
+     bought for this job carries its idle draw too. */
+  const wattSec = dedicated
+    ? busy * hw.watt + (86400 - busy) * idle
+    : busy * (hw.watt - idle);
+  const power = wattSec / 3600 / 1000 * kwh * 30 * machines;
+
+  return { tps, busySec, feasible, machines, power, dedicated,
+           utilization: busySec / 86400 };
+}
+
+function breakEven(apiM, localM, capex, months = 36){
+  const pts = [];
+  let cross = null;
+  for(let i = 0; i <= months; i++){
+    const a = apiM * i;
+    const l = capex + localM * i;
+    pts.push({ m:i, api:a, local:l });
+    if(cross === null && i > 0 && l <= a) cross = i;
+  }
+  return { pts, cross };
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   4. TASKS & SCORING
+   ═══════════════════════════════════════════════════════════════════════ */
+const TASKS = {
+  agentic:   { label:"Agents & tool use",  w:{agentic:.55, coding:.25, intel:.20}, cost:.22, need:["tools"],
+               vol:{inTok:12000, outTok:900}, kw:["agent","tool","mcp","workflow","autonomous","browser","computer use"] },
+  coding:    { label:"Code generation",    w:{coding:.60, agentic:.20, intel:.20}, cost:.22, need:[],
+               vol:{inTok:8000, outTok:1200}, kw:["code","coding","refactor","program","repo","pull request","debug","sdk"] },
+  chat:      { label:"Chat assistant",     w:{intel:.55, agentic:.25, coding:.20}, cost:.32, need:[],
+               vol:{inTok:2500, outTok:600}, kw:["chat","assistant","support","conversation","bot","copilot"] },
+  rag:       { label:"RAG / doc Q&A",      w:{intel:.70, agentic:.15, coding:.15}, cost:.38, need:[], minCtx:128000,
+               vol:{inTok:16000, outTok:500}, kw:["rag","retrieval","document","knowledge base","search","q&a","qa","pdf"] },
+  summarize: { label:"Summarization",      w:{intel:.80, coding:.10, agentic:.10}, cost:.45, need:[],
+               vol:{inTok:20000, outTok:600}, kw:["summar","digest","brief","condense","meeting notes","transcript"] },
+  extract:   { label:"Classify & extract", w:{intel:.85, coding:.10, agentic:.05}, cost:.55, need:["structured"],
+               vol:{inTok:2000, outTok:250}, kw:["classif","extract","label","tag","json","structured","parse","invoice","entity","moderation"] },
+  vision:    { label:"Vision / OCR",       w:{intel:.75, coding:.10, agentic:.15}, cost:.38, need:["image"],
+               vol:{inTok:3000, outTok:500}, kw:["image","vision","ocr","screenshot","photo","diagram","chart read","scan"] },
+  longctx:   { label:"Long-context",       w:{intel:.75, agentic:.15, coding:.10}, cost:.30, need:[], minCtx:500000,
+               vol:{inTok:200000, outTok:2000}, kw:["long context","whole codebase","entire","book","large document","corpus"] },
+  reasoning: { label:"Reasoning & math",   w:{intel:.80, coding:.15, agentic:.05}, cost:.18, need:[], prefer:["reasoning"],
+               vol:{inTok:3000, outTok:3000}, kw:["reason","math","proof","analysis","research","solve","logic","science"] },
+  translate: { label:"Translation",        w:{intel:.85, coding:.05, agentic:.10}, cost:.48, need:[],
+               vol:{inTok:2000, outTok:2000}, kw:["translat","localis","localiz","multilingual","language"] },
+  creative:  { label:"Writing & creative", w:{intel:.85, coding:.05, agentic:.10}, cost:.30, need:[],
+               vol:{inTok:2000, outTok:1800}, kw:["write","writing","creative","story","copy","marketing","blog","script"] }
+};
+
+const CAPS = [
+  { k:"tools",      label:"Function calling" },
+  { k:"structured", label:"Structured output" },
+  { k:"reasoning",  label:"Reasoning effort" },
+  { k:"image",      label:"Image input" },
+  { k:"audio",      label:"Audio input" },
+  { k:"video",      label:"Video input" }
+];
+
+const SCALE_PRESETS = [
+  { k:"proto",  label:"Prototype",   req:100,    note:"100 req/day" },
+  { k:"internal",label:"Internal tool", req:1000, note:"1k req/day" },
+  { k:"prod",   label:"Production",  req:20000,  note:"20k req/day" },
+  { k:"volume", label:"High volume", req:250000, note:"250k req/day" }
+];
+
+function inferTask(text){
+  const t = (text || "").toLowerCase();
+  if(!t.trim()) return null;
+  let best = null, bestScore = 0;
+  for(const [k, def] of Object.entries(TASKS)){
+    let s = 0;
+    for(const kw of def.kw) if(t.includes(kw)) s += kw.length;
+    if(s > bestScore){ bestScore = s; best = k; }
+  }
+  return bestScore > 0 ? best : null;
+}
+
+function costWeight(task, vol){
+  /* the bigger the bill, the more cost matters — capped so quality never vanishes */
+  const monthlyTokens = vol.req * 30 * (vol.inTok + vol.outTok);
+  const bump = Math.min(0.22, Math.log10(Math.max(1, monthlyTokens / 1e7)) * 0.09);
+  return Math.max(0.1, Math.min(0.62, task.cost + bump));
+}
+
+function rank(){
+  const task = TASKS[STATE.task];
+  if(!task) return null;
+  const vol = STATE.vol;
+  const cw = costWeight(task, vol);
+  const qw = 1 - cw;
+  const wantLocal = STATE.deploy !== "api" || STATE.reqPrivate;
+  const apiAllowed = STATE.deploy !== "local" && !STATE.reqPrivate;
+
+  const cuts = { ctx:[], caps:[], open:[], bench:[], price:[], legacy:[] };
+  const pool = [];
+
+  for(const m of STATE.catalog){
+    if(m.fp && m.fp.status === "legacy"){ cuts.legacy.push(m); continue; }
+    if(STATE.minCtx && m.ctx < STATE.minCtx){ cuts.ctx.push(m); continue; }
+    if(task.minCtx && m.ctx < Math.min(task.minCtx, STATE.minCtx || task.minCtx)){ cuts.ctx.push(m); continue; }
+
+    const need = new Set([...task.need, ...STATE.caps]);
+    let missing = null;
+    for(const c of need){
+      const has = c === "image" ? m.mods.image : c === "audio" ? m.mods.audio :
+                  c === "video" ? m.mods.video : m.caps[c];
+      if(!has){ missing = c; break; }
+    }
+    if(missing){ cuts.caps.push({ m, missing }); continue; }
+
+    /* "run it on my machine" implies open weights — a hosted-only model cannot
+       be a candidate for hardware you own, whatever its score. */
+    const openOnly = STATE.reqOpen || STATE.reqPrivate || STATE.deploy === "local";
+    if(openOnly && !m.open){ cuts.open.push(m); continue; }
+    if(!m.q || !m.hasQ){ cuts.bench.push(m); continue; }
+    if(m.inP === 0 && m.outP === 0 && !m.open){ cuts.price.push(m); continue; }
+    pool.push(m);
+  }
+
+  /* cost score across the surviving pool, log-scaled */
+  const costs = pool.map(m => apiMonthly(m, vol, false).month);
+  const lo = Math.min(...costs.filter(c => c > 0)) || 1;
+  const hi = Math.max(...costs) || 1;
+  const lg = v => Math.log10(Math.max(v, lo / 4));
+  const span = Math.max(0.001, lg(hi) - lg(lo));
+
+  const scored = pool.map((m, i) => {
+    const q = m.q;
+    /* Renormalize the task weights over the indices this model actually publishes.
+       `coverage` is the share of the task's criteria backed by real data; a model
+       measured on one index out of three is discounted rather than credited with
+       a stand-in score it never earned. */
+    let acc = 0, coverage = 0;
+    for(const k of ["agentic", "coding", "intel"]){
+      const w = task.w[k] || 0;
+      if(w && q[k] != null){ acc += w * q[k]; coverage += w; }
+    }
+    const rawQuality = coverage > 0 ? acc / coverage : 0;
+    const quality = rawQuality * (0.6 + 0.4 * coverage);
+    const cost = costs[i];
+    const costScore = Math.max(0, Math.min(100, 100 * (1 - (lg(cost) - lg(lo)) / span)));
+
+    let bonus = 0;
+    for(const p of (task.prefer || [])) if(m.caps[p]) bonus += 3;
+    if(m.batch) bonus += 1.5;
+    if(m.cacheRead != null && vol.cache > 30) bonus += 2.5;
+    if(STATE.latency === "hard" && (m.params && m.params.active > 100)) bonus -= 4;
+    if(STATE.latency !== "none" && m.caps.reasoning && !task.prefer) bonus -= 1;
+
+    /* When the whole point is running it yourself, a model that does not fit the
+       machine is close to useless however well it scores. Weight fit heavily —
+       enough to float runnable models to the top, not enough to crown a bad one. */
+    if(STATE.deploy === "local" || STATE.reqPrivate){
+      const f = localFit(m, STATE.hw, Math.max(8000, Math.min(vol.inTok + vol.outTok, 32000)));
+      if(f && f.best){
+        bonus += f.best.verdict === "yes" ? 25 : f.best.verdict === "offload" ? 5 : -15;
+      }
+    }
+
+    return { m, quality, rawQuality, coverage, costScore, cost, bonus,
+             fit: qw * quality + cw * costScore + bonus };
+  });
+
+  scored.sort((a, b) => b.fit - a.fit);
+  return { task, scored, cuts, cw, qw, wantLocal, apiAllowed, pool };
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   5. HELP — every piece of jargon this page uses, explained once
+   ═══════════════════════════════════════════════════════════════════════ */
+const HELP = {
+  fit: "<b>Fit</b> blends two things into one 0–100 number: how well the model scores on the benchmarks that matter for your task, and how cheap it is at your volume. The quality:cost split is shown on the right and shifts toward cost as your volume grows.",
+  quality: "<b>Quality</b> is the model's benchmark score, re-weighted for your task. 100 means it is the best-measured model in the catalog on this blend — not that it is perfect.",
+  cost: "Estimated spend for 30 days at the volume in question 4. It applies cached-input rates and long-context tiers where the provider has them.",
+  context: "<b>Context window</b> is how much text the model can hold in one request — your prompt, the documents you paste in, the conversation so far and its own reply, all together. Ask for more than you need and you pay for capacity you never use.",
+  intok: "Average tokens you send per request, counting the system prompt, tools, retrieved documents and conversation history. Roughly 0.75 words per token.",
+  cache: "The share of your input that is byte-identical on every call — a fixed system prompt, tool definitions, a few-shot block. Providers charge around a tenth as much to re-read it. At a high share this changes which model is cheapest, so guess honestly.",
+  batch: "<b>Batch tier</b> is a discounted rate for work you submit as a job and collect later, typically within a day. Half price is common. Useless for anything interactive.",
+  agentic: "<b>Agentic</b> measures multi-step tool use: calling functions, browsing, operating a computer, recovering from its own mistakes over a long task.",
+  coding: "<b>Coding</b> measures writing, editing and debugging real code, not puzzle-style snippets.",
+  intel: "<b>Intelligence</b> is a broad reasoning, knowledge and instruction-following composite.",
+  coverage: "Most models publish only some of the three benchmark indices. We re-weight your task over whichever ones exist and then discount the result by how much of the task is genuinely measured — a model scored on one index out of three is treated as less certain, not as better.",
+  disputed: "The two independent price sources disagree by more than 5%. An aggregator's resale rate is not always the provider's list price. Both are shown; check the provider's own page before you budget.",
+  open: "<b>Open weights</b> means the parameter file is downloadable and you can serve it yourself. It does not always mean a permissive licence — several carry conditions on commercial use.",
+  vram: "The memory the model's weights must live in. On a discrete GPU that is VRAM; on Apple Silicon and integrated GPUs it is system memory shared with everything else, so only part of it is usable.",
+  bandwidth: "How fast the chip can read its own memory. Generating each token means reading the active weights once, so bandwidth — not raw compute — sets tokens per second for a single stream.",
+  quant: "<b>Quantization</b> stores each weight in fewer bits, shrinking the model so it fits. Q4_K_M is about 4.5 bits per weight and the usual default: roughly a quarter the size of full precision for a small quality cost. Q8 is near-lossless. FP16 is the original.",
+  kv: "The <b>KV cache</b> holds the attention state for every token in the conversation, and it grows with context length. It is on top of the weights — at long context it can rival them in size, which is why a model that looks like it fits may not.",
+  tps: "Estimated tokens per second for one stream, from memory bandwidth ÷ the weights read per token. Your real number depends on the serving stack and how many requests you batch together.",
+  duty: "What share of the day the accelerator would spend generating at this volume. Above roughly 80% you have no headroom for spikes and need a second machine.",
+  breakeven: "The month when everything you have spent on self-hosting — hardware plus electricity — falls below what you would have paid the API by then. Your own time keeping it running is not counted.",
+  capex: "Leave at 0 if you already own the machine: only the extra electricity then counts against the API bill. Enter a price and it is amortised into the break-even, and idle power starts counting too, because the machine exists for this job.",
+  offload: "Part of the model sits in system RAM instead of GPU memory. It runs, but every token crosses a much slower bus — expect a large fraction of the speed, not a small one.",
+  ruledout: "Hard constraints eliminate rather than down-rank. This is what they removed, so you can tell a genuinely poor fit from something your own filters excluded.",
+  weights: "How the task splits attention across the three benchmark indices. A coding agent leans on agentic and coding; a bulk classifier leans on general intelligence and cares far more about price."
+};
+
+/* ═══════════════════════════════════════════════════════════════════════
+   6. RENDER
+   ═══════════════════════════════════════════════════════════════════════ */
+const $ = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
+const esc = s => String(s == null ? "" : s).replace(/[&<>"]/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;" }[c]));
+const fmtUsd = v =>
+  v == null ? "—" : v === 0 ? "$0" :
+  v >= 100000 ? "$" + Math.round(v / 1000).toLocaleString() + "k" :
+  v >= 1000 ? "$" + Math.round(v).toLocaleString() :
+  v >= 10 ? "$" + v.toFixed(0) :
+  v >= 0.1 ? "$" + v.toFixed(2) : "$" + v.toFixed(4);
+const fmtTok = v => v >= 1e6 ? (v / 1e6).toFixed(v >= 1e7 ? 0 : 1) + "M" :
+                    v >= 1000 ? Math.round(v / 1000) + "K" : String(v);
+const pMil = p => p == null ? "—" : "$" + (p * 1e6).toFixed(p * 1e6 < 1 ? 3 : 2);
+const trunc = (s, n) => s.length > n ? s.slice(0, n - 1) + "…" : s;
+const h = (k, label) => `<button class="help" data-help="${k}" aria-label="${label || "Explain"}" type="button">?</button>`;
+const times = (a, b) => { const r = a / Math.max(b, 1e-9); return r >= 10 ? Math.round(r) : r.toFixed(1); };
+
+function localFitFor(m){
+  if(!m.open || (STATE.deploy === "api" && !STATE.reqPrivate)) return null;
+  return localFit(m, STATE.hw, Math.max(8000, Math.min(STATE.vol.inTok + STATE.vol.outTok, 32000)));
+}
+
+let LAST = null;   /* the current ranking, for the drawer and the summary */
+
+function render(){
+  const out = $("#out");
+  syncBrief();
+
+  if(!STATE.loaded){
+    out.innerHTML = STATE.sources.or === "fail"
+      ? `<div class="empty"><h3>Could not reach the model catalog</h3>
+         <p>The three data sources are all public and work from a local file, so this is most likely
+            a dropped connection or an extension blocking them. Reload once you are back online.</p></div>`
+      : `<div class="card pad"><div style="display:flex;align-items:center;gap:10px;margin-bottom:18px">
+           <span class="spin"></span><b style="font-size:14px">Loading every model, price and benchmark…</b></div>
+         ${[92,74,84,62,78].map(w => `<div class="skel" style="width:${w}%;margin-bottom:12px"></div>`).join("")}</div>`;
+    return;
+  }
+  if(!STATE.task){
+    out.innerHTML = `<div class="empty"><h3>Start with what you're building</h3>
+      <p><b>${STATE.catalog.length}</b> models from
+      <b>${new Set(STATE.catalog.map(m => m.provider)).size}</b> providers are loaded and ready.
+      Pick a job in question 1 — the recommendation, the monthly bill and the self-host break-even
+      all appear here, and update as you refine the rest.</p></div>`;
+    return;
+  }
+
+  const R = rank();
+  LAST = R;
+  if(!R || !R.scored.length){
+    out.innerHTML = `<div class="card pad"><h2 style="font-size:17px;margin-bottom:10px">Nothing clears your constraints</h2>
+      <p style="color:var(--ink-2);max-width:62ch;margin-bottom:18px">Every model was eliminated by a hard
+      requirement. The usual culprit is the minimum context window, or "open weights required" combined with a
+      capability only hosted models expose. Here is exactly what removed what:</p>
+      ${cutsTable(R ? R.cuts : {})}</div>`;
+    bindTips();
+    return;
+  }
+
+  if(R.wantLocal) enrichHF(R.scored.slice(0, 30).map(s => s.m)).then(ch => { if(ch) render(); });
+
+  out.innerHTML = `<div class="stack">
+    ${verdict(R)}
+    ${alternates(R)}
+    ${shortlistSec(R)}
+    ${R.apiAllowed ? costSec(R) : ""}
+    ${R.wantLocal ? localSec(R) : ""}
+    ${cutsSec(R)}
+  </div>`;
+  bindResults();
+}
+
+/* ── the answer, stated plainly ─────────────────────────── */
+function verdict(R){
+  const s = R.scored[0], m = s.m;
+  const c = apiMonthly(m, STATE.vol, false);
+  const byQ = [...R.scored].sort((a, b) => b.quality - a.quality);
+  const byC = [...R.scored].sort((a, b) => a.cost - b.cost);
+  const qRank = byQ.indexOf(s) + 1;
+  const fit = localFitFor(m);
+  const runs = fit && fit.best && fit.best.verdict === "yes";
+
+  const tags = [];
+  if(m.open) tags.push(`<span class="tag open">open weights</span>`);
+  if(runs) tags.push(`<span class="tag local">runs on your machine</span>`);
+  if(s.coverage < 0.6) tags.push(`<span class="tag warn">partly measured</span>`);
+
+  /* one honest paragraph, not a score dump */
+  const bits = [];
+  const topQ = byQ[0];
+  const perDay = STATE.vol.req.toLocaleString();
+  const gap = topQ.quality - s.quality;
+
+  if(qRank === 1){
+    bits.push(`It is the highest-scoring option for this job${
+      byC[0] === s ? " <b>and</b> the cheapest that qualifies" : ""}, and at ${perDay} requests a day it costs <b>${fmtUsd(c.month)} a month</b>.`);
+  } else {
+    bits.push(`It scores <b>${s.quality.toFixed(0)} of 100</b> on the abilities this job rewards — ${
+      gap < 6 ? `within ${gap.toFixed(0)} points of the best-scoring option`
+              : `${gap.toFixed(0)} points behind ${esc(topQ.m.name)}`} — while costing <b>${
+      times(topQ.cost, s.cost)}× less, ${fmtUsd(c.month)} a month</b> at ${perDay} requests a day.`);
+  }
+  if(runs) bits.push(`Because the weights are downloadable it also fits on your ${esc(STATE.hw.gpu)} at ${
+    fit.best.k}, so running it yourself is a real option rather than a theoretical one.`);
+  else if(m.open && R.wantLocal && fit) bits.push(`The weights are downloadable, but at ${
+    Math.round(fit.totalB)}B parameters it is far too large for your current machine — this pick is via the API.`);
+
+  return `<div class="verdict">
+    <div class="v-kick">Recommended for ${esc(R.task.label.toLowerCase())}</div>
+    <h2 class="v-name">${esc(m.name)} ${tags.join(" ")}</h2>
+    <div class="v-meta">${esc(m.provider)} · ${fmtTok(m.ctx)} context · ${
+      m.open ? "self-hostable" : "hosted API only"}</div>
+    <p class="v-why">${bits.join(" ")}</p>
+    <div class="v-nums">
+      <div><div class="n-l">${STATE.deploy === "local" || STATE.reqPrivate
+          ? "If rented via API" : "Monthly cost"} ${h("cost")}</div><div class="n-v">${fmtUsd(c.month)}</div>
+        <div class="n-s">${fmtUsd(c.perReq)} per request</div></div>
+      <div><div class="n-l">Quality for this job ${h("quality")}</div><div class="n-v">${s.quality.toFixed(0)}<span style="font-size:14px;color:var(--ink-3)">/100</span></div>
+        <div class="n-s">#${qRank} of ${R.scored.length} on ability alone</div></div>
+      <div><div class="n-l">Overall fit ${h("fit")}</div><div class="n-v">${s.fit.toFixed(0)}</div>
+        <div class="n-s">${Math.round(R.qw * 100)}% quality / ${Math.round(R.cw * 100)}% cost ${h("weights")}</div></div>
+      ${runs ? `<div><div class="n-l">On your hardware ${h("tps")}</div>
+        <div class="n-v">${Math.round(fit.best.tps)}<span style="font-size:14px;color:var(--ink-3)"> tok/s</span></div>
+        <div class="n-s">${fit.best.k}, ${fit.best.need.toFixed(0)} GB</div></div>`
+      : `<div><div class="n-l">Qualified models</div><div class="n-v">${R.pool.length}</div>
+        <div class="n-s">of ${STATE.catalog.length} in the catalog</div></div>`}
+    </div>
+    <div class="v-acts">
+      <button class="btn primary" data-use-model="${esc(m.id)}">Use this — show me how →</button>
+      <button class="btn" data-open-model="${esc(m.id)}">See the full breakdown</button>
+      <button class="btn" data-scroll="#secList">Compare the shortlist</button>
+    </div>
+  </div>`;
+}
+
+/* ── the two trades worth knowing about ─────────────────── */
+function alternates(R){
+  const pick = R.scored[0];
+  const byQ = [...R.scored].sort((a, b) => b.quality - a.quality);
+  const byC = [...R.scored].sort((a, b) => a.cost - b.cost);
+  const best = byQ.find(x => x !== pick);
+  /* A cheaper model is only a real alternative if it is still competent. A free
+     endpoint 70 quality points down is noise, not a trade worth offering. */
+  const cheap = byC.find(x => x !== pick && x.cost > 0 &&
+                              (pick.quality - x.quality) <= 12);
+  const cards = [];
+
+  if(best && best.quality > pick.quality + 1){
+    const d = best.cost / Math.max(pick.cost, 1e-9);
+    cards.push(`<button class="alt" data-open-model="${esc(best.m.id)}">
+      <div class="alt-k">If quality matters more</div>
+      <div class="alt-n">${esc(best.m.name)}</div>
+      <div class="alt-d"><b>+${(best.quality - pick.quality).toFixed(0)} quality points</b> for
+        ${d > 1.15 ? `${times(best.cost, pick.cost)}× the cost` : d < 0.9 ? "less money" : "about the same money"}
+        — ${fmtUsd(best.cost)}/mo.</div></button>`);
+  }
+  if(cheap && cheap.cost < pick.cost * 0.85){
+    cards.push(`<button class="alt" data-open-model="${esc(cheap.m.id)}">
+      <div class="alt-k">If cost matters more</div>
+      <div class="alt-n">${esc(cheap.m.name)}</div>
+      <div class="alt-d"><b>${fmtUsd(cheap.cost)}/mo</b>, saving ${fmtUsd(pick.cost - cheap.cost)} a month
+        ${(pick.quality - cheap.quality) < 1 ? "at effectively the same quality"
+          : `for ${(pick.quality - cheap.quality).toFixed(0)} fewer quality points`}.</div></button>`);
+  }
+  return cards.length ? `<div class="alts">${cards.join("")}</div>` : "";
+}
+
+/* ── shortlist ──────────────────────────────────────────── */
+function shortlistSec(R){
+  /* Running it yourself means the API price is a reference, not your bill — so
+     the headline number becomes the thing that decides it: does it fit, how fast. */
+  const localMode = STATE.deploy === "local" || STATE.reqPrivate;
+  const rows = R.scored.slice(0, 10).map((s, i) => {
+    const m = s.m, c = apiMonthly(m, STATE.vol, false);
+    const fit = localFitFor(m);
+    const tags = [];
+    if(m.open) tags.push(`<span class="tag open">open</span>`);
+    if(fit && fit.best && fit.best.verdict === "yes") tags.push(`<span class="tag local">local</span>`);
+    if(m.fp && m.fp.inP != null &&
+       Math.abs(apiMonthly(m, STATE.vol, true).month - c.month) / Math.max(1e-9, c.month) > 0.05)
+      tags.push(`<span class="tag warn">price disputed</span>`);
+    if(s.coverage < 0.6) tags.push(`<span class="tag warn">partly measured</span>`);
+
+    let cell = `<b>${fmtUsd(c.month)}</b><span>per month</span>`;
+    if(localMode){
+      const v = fit && fit.best ? fit.best.verdict : null;
+      cell = v === "yes"
+        ? `<b>~${Math.round(fit.best.tps)}<span style="font-size:11px;font-weight:500"> tok/s</span></b><span>on your machine</span>`
+        : v === "offload"
+          ? `<b style="color:var(--serious);font-size:13px">offload only</b><span>${fit.best.need.toFixed(0)} GB needed</span>`
+          : fit
+            ? `<b style="color:var(--ink-3);font-size:13px">too big</b><span>${fit.opts[0].need.toFixed(0)} GB at 4-bit</span>`
+            : `<b style="color:var(--ink-3);font-size:13px">size unknown</b><span>checking…</span>`;
+    }
+    const meta = `${esc(m.provider)} · ${fmtTok(m.ctx)} ctx · ` +
+      (localMode ? `${fmtUsd(c.month)}/mo if rented via API` : `${pMil(m.inP)}/${pMil(m.outP)} per 1M`);
+
+    return `<button class="li ${i === 0 ? "top" : ""}" data-open-model="${esc(m.id)}">
+      <span class="li-r">${i + 1}</span>
+      <span><span class="li-n">${esc(m.name)} ${tags.join(" ")}</span>
+        <span class="li-m">${meta}</span></span>
+      <span class="qbar q-cell"><span class="track"><i style="width:${Math.max(2, s.quality)}%"></i></span>
+        <b>${s.quality.toFixed(0)}</b></span>
+      <span class="li-c">${cell}</span>
+      <span class="li-go" aria-hidden="true">›</span>
+    </button>`;
+  }).join("");
+
+  return `<details class="sec" id="secList" open>
+    <summary><span class="sec-t">Shortlist</span>
+      <span class="sec-c">${R.pool.length} qualified · click any row</span>
+      ${chev()}</summary>
+    <div class="sec-bd" style="padding:0 0 6px"><div class="list">${rows}</div></div>
+  </details>`;
+}
+
+/* ── cost ───────────────────────────────────────────────── */
+function costSec(R){
+  const rows = R.scored.slice(0, 10).map(s => {
+    const m = s.m, c = apiMonthly(m, STATE.vol, false);
+    const b = m.batch ? apiMonthly({ ...m, inP:m.batch.inP, outP:m.batch.outP, cacheRead:null, overrides:[] }, STATE.vol, false) : null;
+    const fp = m.fp && m.fp.inP != null ? apiMonthly(m, STATE.vol, true) : null;
+    return { m, c, b, fp };
+  });
+  const max = Math.max(...rows.map(r => r.c.month));
+  const span = STATE.vol.req * 30 * (STATE.vol.inTok + STATE.vol.outTok);
+  const cheapest = rows.reduce((a, b) => a.c.month <= b.c.month ? a : b);
+  const dearest = rows.reduce((a, b) => a.c.month >= b.c.month ? a : b);
+
+  return `<details class="sec" open>
+    <summary><span class="sec-t">What it costs</span>
+      <span class="sec-c">${fmtTok(span)} tokens/mo · spread ${times(dearest.c.month, cheapest.c.month)}×</span>
+      ${chev()}</summary>
+    <div class="sec-bd">
+      <div class="flag"><span class="ic">◷</span><span>Across the shortlist the same workload ranges from
+        <b>${fmtUsd(cheapest.c.month)}</b> (${esc(cheapest.m.name)}) to <b>${fmtUsd(dearest.c.month)}</b>
+        (${esc(dearest.m.name)}) a month${STATE.vol.cache ? `, with ${STATE.vol.cache}% of your input cached` : ""}.
+        Model choice is usually a bigger lever on the bill than anything you do in the prompt.</span></div>
+      ${barChart(rows.map(r => ({ label:r.m.name, value:r.c.month, sub:r.m.provider })), max)}
+      <div class="scroll" style="margin-top:18px"><table class="t">
+        <thead><tr><th>Model</th><th>In /1M</th><th>Out /1M</th><th>Per request</th>
+          <th>Monthly</th><th>Batch ${h("batch")}</th><th>Provider list ${h("disputed")}</th></tr></thead>
+        <tbody>${rows.map(r => `<tr>
+          <td>${esc(r.m.name)} <span style="color:var(--ink-3);font-size:11.5px">${esc(r.m.provider)}</span></td>
+          <td class="n">${pMil(r.c.inP)}</td><td class="n">${pMil(r.c.outP)}</td>
+          <td class="n">${fmtUsd(r.c.perReq)}</td><td class="n"><b>${fmtUsd(r.c.month)}</b></td>
+          <td class="n">${r.b ? fmtUsd(r.b.month) : "—"}</td>
+          <td class="n">${r.fp == null ? "—"
+            : Math.abs(r.fp.month - r.c.month) / Math.max(1e-9, r.c.month) > 0.05
+              ? `<span style="color:var(--serious)">${fmtUsd(r.fp.month)}</span>` : "matches"}</td>
+        </tr>`).join("")}</tbody></table></div>
+      <p class="cap">"Provider list" is the rate published by the model's own provider, matched from a second
+        independent source. Where the two differ by more than 5% both are shown rather than reconciled — open
+        a model to see which is which and follow the link to the provider's page.</p>
+    </div>
+  </details>`;
+}
+
+function barChart(items, max){
+  const rowH = 32, padL = 186, padR = 84, w = 780, h2 = items.length * rowH + 12;
+  const span = max > 0 ? max : 1;
+  const bars = items.map((it, i) => {
+    const y = i * rowH + 5;
+    const bw = Math.max(2, (it.value / span) * (w - padL - padR));
+    return `<g data-tip="${esc(it.label)} · ${esc(it.sub)}&#10;${fmtUsd(it.value)} per month">
+      <text class="lb" x="${padL - 12}" y="${y + 15}" text-anchor="end">${esc(trunc(it.label, 25))}</text>
+      <rect x="${padL}" y="${y + 4}" width="${bw}" height="16" rx="4" fill="var(--s1)"></rect>
+      <rect x="${padL}" y="${y}" width="${w - padL - padR}" height="24" fill="transparent"></rect>
+      <text class="vl" x="${padL + bw + 9}" y="${y + 16}">${fmtUsd(it.value)}</text></g>`;
+  }).join("");
+  return `<div class="scroll"><svg viewBox="0 0 ${w} ${h2}" width="100%" style="max-width:${w}px;height:${h2}px"
+    role="img" aria-label="Estimated monthly cost by model">
+    <line class="gl" x1="${padL}" y1="2" x2="${padL}" y2="${h2 - 5}" stroke-width="1"></line>${bars}</svg></div>`;
+}
+
+/* ── local ──────────────────────────────────────────────── */
+function localSec(R){
+  const cands = R.scored.filter(s => s.m.open).slice(0, 25)
+    .map(s => ({ s, fit: localFitFor(s.m) })).filter(x => x.fit);
+  const runnable = cands.filter(x => x.fit.best && x.fit.best.verdict === "yes");
+  const offload = cands.filter(x => x.fit.best && x.fit.best.verdict === "offload");
+  const hw = STATE.hw;
+
+  let body = `<div class="flag"><span class="ic">▣</span><span><b>${esc(hw.gpu)}</b> —
+    ${hw.vram} GB ${hw.unified ? "unified memory" : "VRAM"} ${h("vram")}, ${hw.ram} GB system RAM,
+    ${hw.bw} GB/s bandwidth ${h("bandwidth")}, ~${hw.watt} W under load.
+    ${hw.note ? `<br><span style="color:var(--ink-3)">${esc(hw.note)}</span>` : ""}</span></div>`;
+
+  if(!runnable.length && !offload.length){
+    body += `<div class="flag w"><span class="ic">⚠</span><span><b>Nothing on the shortlist fits this machine.</b>
+      The open models that clear your quality bar for ${esc(R.task.label.toLowerCase())} are all larger than
+      ${(hw.unified ? hw.vram * 0.75 : hw.vram).toFixed(0)} GB even at 4-bit. Realistic options: rent a GPU by the
+      hour, use a hosted API for this workload, or relax the task requirements so smaller models qualify.</span></div>`;
+    return `<details class="sec" open><summary><span class="sec-t">Running it yourself</span>
+      <span class="sec-c">nothing fits</span>${chev()}</summary><div class="sec-bd">${body}</div></details>`;
+  }
+
+  const best = runnable[0] || offload[0];
+  const apiRef = R.scored[0];
+  const apiM = apiMonthly(apiRef.m, STATE.vol, false).month;
+  const lm = localMonthly(best.fit, hw, STATE.vol, STATE.kwh, STATE.hwCost > 0);
+
+  if(lm){
+    const be = breakEven(apiM, lm.power, STATE.hwCost);
+    body += `<div class="v-nums" style="margin:0 0 16px">
+      <div><div class="n-l">Best local pick</div><div class="n-v" style="font-size:17px">${esc(best.s.m.name)}</div>
+        <div class="n-s">${best.fit.best.k} · ${best.fit.best.need.toFixed(0)} GB · ~${Math.round(best.fit.best.tps)} tok/s</div></div>
+      <div><div class="n-l">Electricity ${h("duty")}</div><div class="n-v">${fmtUsd(lm.power)}</div>
+        <div class="n-s">${(lm.utilization * 100).toFixed(lm.utilization < 0.1 ? 1 : 0)}% duty${lm.dedicated ? ", incl. idle" : ", above idle"}</div></div>
+      <div><div class="n-l">Same job via API</div><div class="n-v">${fmtUsd(apiM)}</div>
+        <div class="n-s">${esc(trunc(apiRef.m.name, 20))}</div></div>
+      <div><div class="n-l">Break-even ${h("breakeven")}</div>
+        <div class="n-v">${be.cross == null ? "never" : be.cross === 0 ? "day one" : "month " + be.cross}</div>
+        <div class="n-s">${STATE.hwCost > 0 ? `on ${fmtUsd(STATE.hwCost)} of hardware` : "hardware already owned"}</div></div>
+    </div>`;
+
+    if(!lm.feasible) body += `<div class="flag w"><span class="ic">⚠</span><span>
+      <b>This machine cannot keep up.</b> ${STATE.vol.req.toLocaleString()} requests/day needs about
+      <b>${(lm.busySec / 3600).toFixed(1)} GPU-hours a day</b> at ~${Math.round(lm.tps)} tok/s — more than a day holds.
+      The numbers above assume <b>${lm.machines}×</b> of this machine running in parallel.</span></div>`;
+
+    body += beChart(be, apiM, lm.power, STATE.hwCost);
+  }
+
+  body += `<div class="scroll" style="margin-top:18px"><table class="t">
+    <thead><tr><th>Open model</th><th>Params</th><th>Quant ${h("quant")}</th><th>Memory ${h("kv")}</th>
+      <th>Speed ${h("tps")}</th><th style="text-align:left">Verdict</th><th>Licence</th></tr></thead>
+    <tbody>${cands.slice(0, 12).map(({ s, fit }) => {
+      const o = fit.best, v = o ? o.verdict : "no";
+      return `<tr><td>${esc(s.m.name)} <span style="color:var(--ink-3);font-size:11.5px">${esc(s.m.provider)}</span></td>
+        <td class="n">${fit.totalB.toFixed(fit.totalB < 10 ? 1 : 0)}B${fit.activeB !== fit.totalB ? `/${fit.activeB.toFixed(0)}B` : ""}</td>
+        <td class="n">${o ? o.k : "—"}</td><td class="n">${o ? o.need.toFixed(0) + " GB" : "—"}</td>
+        <td class="n">${o && v !== "no" ? "~" + Math.round(o.tps) + " tok/s" : "—"}</td>
+        <td style="text-align:left">${v === "yes" ? `<span style="color:var(--good)">● fits</span>`
+          : v === "offload" ? `<span style="color:var(--serious)">● offload only</span> ${h("offload")}`
+          : `<span style="color:var(--crit)">● too big</span>`}</td>
+        <td class="n">${fit.license ? esc(fit.license) : "—"}</td></tr>`;
+    }).join("")}</tbody></table></div>
+    <p class="cap">Memory is weights at that quantization plus a KV cache sized for your context. Speed is estimated
+      from bandwidth ÷ active weights, so mixture-of-experts models punch above their size. Electricity counts
+      ${STATE.hwCost > 0 ? "the full draw including idle, since this machine is being bought for the job"
+        : "only the draw above idle, since you already own and run this machine"}.
+      A licence of <span class="mono">other</span> means a custom one — read it before you ship.</p>`;
+
+  return `<details class="sec" open><summary><span class="sec-t">Running it yourself</span>
+    <span class="sec-c">${runnable.length} of ${cands.length} open models fit</span>${chev()}</summary>
+    <div class="sec-bd">${body}</div></details>`;
+}
+
+function beChart(be, apiM, localM, capex){
+  const w = 780, ht = 240, padL = 66, padR = 22, padT = 16, padB = 32;
+  const months = be.pts.length - 1;
+  const maxY = Math.max(...be.pts.map(p => Math.max(p.api, p.local))) || 1;
+  const X = m => padL + (m / months) * (w - padL - padR);
+  const Y = v => ht - padB - (v / maxY) * (ht - padT - padB);
+  const path = k => be.pts.map((p, i) => (i ? "L" : "M") + X(p.m).toFixed(1) + " " + Y(p[k]).toFixed(1)).join(" ");
+  const ticks = [0, .25, .5, .75, 1].map(f => `<g><line class="gl" x1="${padL}" y1="${Y(maxY * f)}" x2="${w - padR}"
+      y2="${Y(maxY * f)}" stroke-width="1"></line><text class="ax" x="${padL - 9}" y="${Y(maxY * f) + 4}"
+      text-anchor="end">${fmtUsd(maxY * f)}</text></g>`).join("");
+  const xt = [0, 6, 12, 18, 24, 30, 36].filter(m => m <= months)
+    .map(m => `<text class="ax" x="${X(m)}" y="${ht - 10}" text-anchor="middle">${m ? m + "mo" : "now"}</text>`).join("");
+  let cross = "";
+  if(be.cross != null && be.cross <= months){
+    const cx = X(be.cross), cy = Y(be.pts[be.cross].api);
+    cross = `<line x1="${cx}" y1="${padT}" x2="${cx}" y2="${ht - padB}" stroke="var(--ink-3)"
+      stroke-dasharray="3 3" stroke-width="1"></line>
+      <circle cx="${cx}" cy="${cy}" r="5" fill="var(--surface)" stroke="var(--ink)" stroke-width="2"></circle>
+      <text class="vl" x="${cx + 10}" y="${padT + 12}">break-even</text>`;
+  }
+  return `<div class="legend">
+      <span><i style="background:var(--s1)"></i>Cumulative API spend</span>
+      <span><i style="background:var(--s2)"></i>Cumulative self-host${capex > 0 ? ` (incl. ${fmtUsd(capex)} hardware)` : " (electricity only)"}</span></div>
+    <div class="scroll"><svg viewBox="0 0 ${w} ${ht}" width="100%" style="max-width:${w}px;height:${ht}px"
+      role="img" aria-label="Cumulative cost of API versus self-hosting over three years">
+      ${ticks}${xt}<path d="${path("api")}" fill="none" stroke="var(--s1)" stroke-width="2"></path>
+      <path d="${path("local")}" fill="none" stroke="var(--s2)" stroke-width="2"></path>${cross}</svg></div>
+    <p class="cap">${be.cross == null
+      ? `Self-hosting never overtakes the API within three years here — running the machine costs ${fmtUsd(localM)}/mo against ${fmtUsd(apiM)}/mo of API spend.`
+      : be.cross === 0
+        ? `Self-hosting is cheaper from the first month: ${fmtUsd(localM)}/mo of electricity against ${fmtUsd(apiM)}/mo of API spend.`
+        : `Self-hosting overtakes the API after <b>${be.cross} month${be.cross === 1 ? "" : "s"}</b>, then saves roughly ${fmtUsd(apiM - localM)}/mo. Your own time keeping it running is not in this figure.`}</p>`;
+}
+
+/* ── eliminated ─────────────────────────────────────────── */
+function cutsSec(R){
+  const n = Object.values(R.cuts).reduce((a, b) => a + b.length, 0);
+  return `<details class="sec"><summary><span class="sec-t">What was ruled out ${h("ruledout")}</span>
+    <span class="sec-c">${n} models</span>${chev()}</summary>
+    <div class="sec-bd">${cutsTable(R.cuts)}</div></details>`;
+}
+function cutsTable(cuts){
+  const ex = a => a.slice(0, 5).map(x => esc((x.m || x).name)).join(", ") + (a.length > 5 ? ` and ${a.length - 5} more` : "");
+  const items = [];
+  if(cuts.ctx && cuts.ctx.length) items.push([cuts.ctx.length, `context window smaller than your ${fmtTok(STATE.minCtx)} minimum`, ex(cuts.ctx)]);
+  if(cuts.caps && cuts.caps.length){
+    const by = {}; cuts.caps.forEach(c => by[c.missing] = (by[c.missing] || 0) + 1);
+    items.push([cuts.caps.length, "missing a capability you marked required",
+      Object.entries(by).map(([k, v]) => `${v} lack ${(CAPS.find(c => c.k === k) || {}).label || k}`).join(", ")]);
+  }
+  if(cuts.open && cuts.open.length) items.push([cuts.open.length,
+    STATE.reqPrivate ? "hosted-only, and your data must stay in your network"
+      : STATE.deploy === "local" ? "no downloadable weights, so they cannot run on your machine"
+      : "no downloadable weights", ex(cuts.open)]);
+  if(cuts.bench && cuts.bench.length) items.push([cuts.bench.length, "no published benchmark scores at all — ranking them would be guesswork", ex(cuts.bench)]);
+  if(cuts.legacy && cuts.legacy.length) items.push([cuts.legacy.length, "marked legacy by their own provider", ex(cuts.legacy)]);
+  if(!items.length) return `<p style="color:var(--ink-2)">Nothing was eliminated — every model in the catalog cleared your constraints.</p>`;
+  return `<div class="scroll"><table class="t"><thead><tr><th style="text-align:left">Removed</th>
+    <th style="text-align:left">Because</th><th style="text-align:left">For example</th></tr></thead>
+    <tbody>${items.map(i => `<tr><td><b>${i[0]}</b></td><td class="wrap">${i[1]}</td>
+      <td class="wrap" style="color:var(--ink-3);font-size:12px">${i[2]}</td></tr>`).join("")}</tbody></table></div>`;
+}
+
+const chev = () => `<svg class="sec-chev" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M2 4.5 6 8.5l4-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>`;
+
+/* ═══════════════════════════════════════════════════════════════════════
+   7. DRAWER — deep dive without losing your place
+   ═══════════════════════════════════════════════════════════════════════ */
+let lastFocus = null;
+function openModel(id){
+  if(!LAST) return;
+  const s = LAST.scored.find(x => x.m.id === id);
+  if(!s) return;
+  const m = s.m, t = LAST.task;
+  const c = apiMonthly(m, STATE.vol, false);
+  const fpC = m.fp && m.fp.inP != null ? apiMonthly(m, STATE.vol, true) : null;
+  const disagree = fpC && Math.abs(fpC.month - c.month) / Math.max(1e-9, c.month) > 0.05;
+  const fit = localFitFor(m);
+
+  $("#drTitle").textContent = m.name;
+  $("#drSub").innerHTML = `${esc(m.provider)} · ${fmtTok(m.ctx)} context · fit ${s.fit.toFixed(1)} · ${
+    m.open ? "open weights" : "hosted API"}`;
+
+  const missing = ["agentic","coding","intel"].filter(k => (t.w[k] || 0) > 0 && m.q[k] == null)
+    .map(k => k === "intel" ? "general intelligence" : k);
+  const contrib = [["agentic", t.w.agentic, m.q.agentic], ["coding", t.w.coding, m.q.coding],
+                   ["general intelligence", t.w.intel, m.q.intel]].filter(x => x[1]);
+
+  let out = "";
+  out += `<div class="dr-sec"><h3>Why it ranks here</h3><div class="why">
+    For <b>${esc(t.label.toLowerCase())}</b> the score weights ${contrib.map(x => `${Math.round(x[1]*100)}% ${x[0]}`).join(", ")}.
+    This model scores <b>${s.rawQuality.toFixed(0)}/100</b> on the criteria it has been measured on and
+    <b>${s.costScore.toFixed(0)}/100</b> on cost, combined ${Math.round(LAST.qw*100)}:${Math.round(LAST.cw*100)}
+    ${s.bonus ? `with a ${s.bonus > 0 ? "+" : ""}${s.bonus.toFixed(1)} adjustment for ${adjustReason(m, t)}` : ""}
+    → <b>fit ${s.fit.toFixed(1)}</b>.
+    ${missing.length ? `<br><br><b>No published ${missing.join(" or ")} score.</b> Only
+      ${Math.round(s.coverage*100)}% of this task's criteria are backed by measurement, so the quality figure is
+      discounted to ${s.quality.toFixed(0)} rather than credited with a substitute. Treat it as less certain than a
+      fully-measured neighbour — not as worse.` : ""}
+  </div></div>`;
+
+  out += `<div class="dr-sec"><h3>Benchmark detail ${h("coverage")}</h3>
+    ${["agentic","coding","intel"].map(k => {
+      const lbl = k === "intel" ? "Intelligence" : k[0].toUpperCase() + k.slice(1);
+      const v = m.q[k];
+      return `<div style="display:flex;align-items:center;gap:11px;margin-bottom:9px">
+        <span style="width:104px;font-size:12.5px;color:var(--ink-3)">${lbl} ${h(k)}</span>
+        <span class="qbar" style="flex:1"><span class="track"><i style="width:${v == null ? 0 : Math.max(2, v)}%"></i></span>
+        <b>${v == null ? "n/a" : v.toFixed(0)}</b></span></div>`;
+    }).join("")}</div>`;
+
+  if(disagree) out += `<div class="dr-sec"><div class="flag w"><span class="ic">⚠</span><span>
+    <b>The two price sources disagree.</b> The aggregator lists ${pMil(c.inP)}/${pMil(c.outP)} per 1M —
+    ${fmtUsd(c.month)}/mo. The provider's own published rate is ${pMil(fpC.inP)}/${pMil(fpC.outP)} —
+    <b>${fmtUsd(fpC.month)}/mo</b>. ${m.fp.url ? `<a href="${esc(m.fp.url)}" target="_blank" rel="noopener">Check the provider's page →</a>` : ""}
+  </span></div></div>`;
+
+  out += `<div class="dr-sec"><h3>Pricing at your volume</h3><dl class="dl">
+    <dt>Input</dt><dd>${pMil(c.inP)} per 1M tokens</dd>
+    <dt>Output</dt><dd>${pMil(c.outP)} per 1M tokens</dd>
+    ${m.cacheRead != null ? `<dt>Cached input</dt><dd>${pMil(m.cacheRead)} per 1M —
+      ${Math.round((1 - m.cacheRead / Math.max(m.inP, 1e-12)) * 100)}% off ${h("cache")}</dd>` : ""}
+    <dt>Per request</dt><dd>${fmtUsd(c.perReq)} at ${fmtTok(STATE.vol.inTok)} in / ${fmtTok(STATE.vol.outTok)} out${
+      STATE.vol.cache ? `, ${STATE.vol.cache}% cached` : ""}</dd>
+    <dt>Per month</dt><dd><b>${fmtUsd(c.month)}</b> at ${STATE.vol.req.toLocaleString()} req/day</dd>
+    ${m.batch ? `<dt>Batch tier ${h("batch")}</dt><dd>${fmtUsd(apiMonthly({ ...m, inP:m.batch.inP, outP:m.batch.outP,
+      cacheRead:null, overrides:[] }, STATE.vol, false).month)}/mo if you can wait</dd>` : ""}
+    ${m.overrides && m.overrides.length ? `<dt>Long context</dt><dd>rate changes above
+      ${fmtTok(m.overrides[0].min)} input tokens</dd>` : ""}
+  </dl></div>`;
+
+  out += `<div class="dr-sec"><h3>Capabilities</h3><dl class="dl">
+    <dt>Context ${h("context")}</dt><dd>${m.ctx.toLocaleString()} tokens${m.maxOut ? ` · ${fmtTok(m.maxOut)} max output` : ""}</dd>
+    <dt>Supports</dt><dd>${capList(m)}</dd>
+    <dt>Weights</dt><dd>${m.open
+      ? `<a href="https://huggingface.co/${esc(m.hfId)}" target="_blank" rel="noopener">${esc(m.hfId)}</a>${
+          fit && fit.license ? ` · licence <span class="mono">${esc(fit.license)}</span>` : ""}${
+          fit ? ` · ${fit.totalB.toFixed(fit.totalB < 10 ? 1 : 0)}B params${fit.activeB !== fit.totalB ? ` (${fit.activeB.toFixed(0)}B active)` : ""}` : ""}`
+      : "hosted API only — not downloadable"} ${h("open")}</dd>
+  </dl></div>`;
+
+  if(fit) out += `<div class="dr-sec"><h3>On your ${esc(STATE.hw.gpu)}</h3>
+    <p style="font-size:12.5px;color:var(--ink-3);margin-bottom:11px">${fit.avail.toFixed(0)} GB usable${
+      STATE.hw.unified ? " of unified memory" : " VRAM"} · ${STATE.hw.bw} GB/s · KV cache ×${fit.kv.toFixed(2)} ${h("kv")}</p>
+    <div class="scroll"><table class="t"><thead><tr><th>Quant ${h("quant")}</th><th>Weights</th>
+      <th>+ KV</th><th>Speed</th><th style="text-align:left">Verdict</th></tr></thead><tbody>
+      ${fit.opts.map(o => `<tr><td>${o.k}</td><td class="n">${o.weights.toFixed(1)} GB</td>
+        <td class="n">${o.need.toFixed(1)} GB</td>
+        <td class="n">${o.verdict === "no" ? "—" : "~" + Math.round(o.tps) + " tok/s"}</td>
+        <td style="text-align:left">${o.verdict === "yes" ? `<span style="color:var(--good)">● fits</span>`
+          : o.verdict === "offload" ? `<span style="color:var(--serious)">● offload</span>`
+          : `<span style="color:var(--crit)">● won't fit</span>`}</td></tr>`).join("")}
+    </tbody></table></div></div>`;
+
+  out += `<div class="dr-sec"><button class="btn primary" style="width:100%;padding:11px"
+    data-use-model="${esc(m.id)}">Use this model — show me how →</button>
+    <p style="font-size:12px;color:var(--ink-3);margin-top:9px;line-height:1.5">Opens setup instructions
+      written for this model and the brief you filled in — install, keys, a working call, and the
+      cost traps specific to it.</p></div>`;
+
+  $("#drBody").innerHTML = out;
+  const d = $("#drawer");
+  lastFocus = document.activeElement;
+  d.hidden = false;
+  requestAnimationFrame(() => d.classList.add("on"));
+  $("#drClose").focus();
+  bindUse($("#drBody"));
+  bindTips();
+}
+function closeDrawer(){
+  const d = $("#drawer");
+  if(d.hidden) return;
+  d.classList.remove("on");
+  setTimeout(() => { d.hidden = true; if(lastFocus) lastFocus.focus(); }, 240);
+}
+function adjustReason(m, t){
+  const r = [];
+  if(STATE.deploy === "local" || STATE.reqPrivate){
+    const f = localFitFor(m);
+    if(f && f.best) r.push(f.best.verdict === "yes" ? "fitting on your machine"
+      : f.best.verdict === "offload" ? "fitting only with offload"
+      : "not fitting on your machine");
+  }
+  for(const p of (t.prefer || [])) if(m.caps[p]) r.push("controllable reasoning effort");
+  if(m.batch) r.push("a batch tier");
+  if(m.cacheRead != null && STATE.vol.cache > 30) r.push("prompt caching at your cache rate");
+  if(STATE.latency === "hard" && m.params && m.params.active > 100) r.push("its size against your realtime latency need");
+  return r.length ? r.join(", ") : "capability match";
+}
+function capList(m){
+  const on = [];
+  if(m.caps.tools) on.push("function calling");
+  if(m.caps.structured) on.push("structured output");
+  if(m.caps.reasoning) on.push("reasoning effort");
+  if(m.mods.image) on.push("image input");
+  if(m.mods.audio) on.push("audio input");
+  if(m.mods.video) on.push("video input");
+  return on.length ? on.join(", ") : "text only";
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   7b. SETUP PAGE — from "this is the model" to "it is running"
+   ═══════════════════════════════════════════════════════════════════════ */
+const codeBlock = (lang, src) => `<div class="code-wrap">
+  <button class="code-copy" data-code type="button">Copy</button>
+  <pre class="code" data-lang="${lang}">${esc(src)}</pre></div>`;
+const step = (n, title, body) => `<div class="su-step"><div class="su-num">${n}</div>
+  <div class="su-body"><h3>${title}</h3>${body}</div></div>`;
+
+/* Native SDK snippets, per provider. Anything not listed falls back to the
+   OpenRouter path, which speaks one API shape for the whole catalog. */
+function nativeSnippet(m){
+  const id = m.slug;
+  switch(m.org){
+    case "anthropic": {
+      /* Adaptive thinking on 4.6-and-later; the older tiers take a token budget
+         instead, so don't emit a parameter that would 400. */
+      const adaptive = /opus-5|opus-4[.-][678]|sonnet-5|sonnet-4[.-]6|fable|mythos/.test(id);
+      const th = adaptive ? `\n    thinking={"type": "adaptive"},` : "";
+      return { name:"Anthropic", env:"ANTHROPIC_API_KEY", install:"pip install anthropic",
+        docs:"https://docs.claude.com/en/api/overview",
+        py:`import anthropic\n\nclient = anthropic.Anthropic()   # reads ANTHROPIC_API_KEY\n\nresp = client.messages.create(\n    model="${id}",\n    max_tokens=16000,${th}\n    messages=[{"role": "user", "content": "Hello"}],\n)\nprint(resp.content[0].text)`,
+        note: adaptive ? "Adaptive thinking lets the model decide how much to reason per request — the fixed <code>budget_tokens</code> parameter is gone on this generation. Use <code>output_config={\"effort\": …}</code> to trade depth against cost, and stream anything with a large <code>max_tokens</code>." : null };
+    }
+    case "openai": return { name:"OpenAI", env:"OPENAI_API_KEY", install:"pip install openai",
+      docs:"https://platform.openai.com/docs",
+      py:`from openai import OpenAI\n\nclient = OpenAI()   # reads OPENAI_API_KEY\n\nresp = client.responses.create(\n    model="${id}",\n    input="Hello",\n)\nprint(resp.output_text)` };
+    case "google": return { name:"Google Gemini", env:"GEMINI_API_KEY", install:"pip install google-genai",
+      docs:"https://ai.google.dev/gemini-api/docs",
+      py:`from google import genai\n\nclient = genai.Client()   # reads GEMINI_API_KEY\n\nresp = client.models.generate_content(\n    model="${id}",\n    contents="Hello",\n)\nprint(resp.text)` };
+    case "x-ai": return { name:"xAI", env:"XAI_API_KEY", install:"pip install openai",
+      docs:"https://docs.x.ai", base:"https://api.x.ai/v1",
+      py:`from openai import OpenAI\n\nclient = OpenAI(base_url="https://api.x.ai/v1",\n                api_key=os.environ["XAI_API_KEY"])\n\nresp = client.chat.completions.create(\n    model="${id}",\n    messages=[{"role": "user", "content": "Hello"}],\n)\nprint(resp.choices[0].message.content)` };
+    case "deepseek": return { name:"DeepSeek", env:"DEEPSEEK_API_KEY", install:"pip install openai",
+      docs:"https://api-docs.deepseek.com", base:"https://api.deepseek.com",
+      py:`from openai import OpenAI\n\nclient = OpenAI(base_url="https://api.deepseek.com",\n                api_key=os.environ["DEEPSEEK_API_KEY"])\n\nresp = client.chat.completions.create(\n    model="${id}",\n    messages=[{"role": "user", "content": "Hello"}],\n)\nprint(resp.choices[0].message.content)` };
+    case "mistralai": return { name:"Mistral", env:"MISTRAL_API_KEY", install:"pip install mistralai",
+      docs:"https://docs.mistral.ai",
+      py:`from mistralai import Mistral\n\nclient = Mistral(api_key=os.environ["MISTRAL_API_KEY"])\n\nresp = client.chat.complete(\n    model="${id}",\n    messages=[{"role": "user", "content": "Hello"}],\n)\nprint(resp.choices[0].message.content)` };
+    default: return null;
+  }
+}
+
+function setupPage(m){
+  const s = LAST && LAST.scored.find(x => x.m.id === m.id);
+  const c = apiMonthly(m, STATE.vol, false);
+  const fit = m.open ? localFit(m, STATE.hw,
+    Math.max(8000, Math.min(STATE.vol.inTok + STATE.vol.outTok, 32000))) : null;
+  const runs = fit && fit.best && fit.best.verdict === "yes";
+  const nat = nativeSnippet(m);
+  const localMode = STATE.deploy === "local" || STATE.reqPrivate;
+
+  /* which path to open on: what they said they wanted, if it is possible */
+  const paths = [];
+  if(m.open && fit) paths.push("local");
+  paths.push("openrouter");
+  if(nat) paths.push("native");
+  const first = (localMode && runs) ? "local" : (nat ? "native" : "openrouter");
+
+  let html = `<div class="su-kick">Set up</div>
+    <h1 class="su-h1">${esc(m.name)}</h1>
+    <p class="su-sub">${esc(m.provider)}${m.open ? " · open weights" : " · hosted API"} —
+      everything below is scoped to the brief you filled in: ${STATE.vol.req.toLocaleString()} requests a day at
+      ${fmtTok(STATE.vol.inTok)} in / ${fmtTok(STATE.vol.outTok)} out${
+      runs ? `, and ${/^[AEIOU]/i.test(STATE.hw.gpu) ? "an" : "a"} ${esc(STATE.hw.gpu)} to run it on` : ""}.</p>
+    <div class="su-facts">
+      <div><div class="n-l">${localMode ? "If rented via API" : "Monthly at your volume"}</div>
+        <div class="n-v">${fmtUsd(c.month)}</div><div class="n-s">${fmtUsd(c.perReq)}/request</div></div>
+      <div><div class="n-l">Token price</div><div class="n-v" style="font-size:17px">${pMil(m.inP)} / ${pMil(m.outP)}</div>
+        <div class="n-s">in / out per 1M</div></div>
+      <div><div class="n-l">Context</div><div class="n-v" style="font-size:17px">${fmtTok(m.ctx)}</div>
+        <div class="n-s">${m.maxOut ? fmtTok(m.maxOut) + " max output" : "tokens"}</div></div>
+      <div><div class="n-l">Licence</div><div class="n-v" style="font-size:17px">${
+        m.open ? esc((fit && fit.license) || "open weights") : "proprietary"}</div>
+        <div class="n-s">${m.open ? "self-hosting allowed — check terms" : "API access only"}</div></div>
+    </div>`;
+
+  /* ── how to run it ── */
+  html += `<div class="su-sec"><h2>Get it running</h2>
+    <p class="lead">${["", "One way in", "Two ways in", "Three ways in"][paths.length]}. ${runs
+      ? "Your machine can run this one, so the local path is the default here — no key, no per-token bill."
+      : m.open && fit ? `This model needs ${fit.opts[0].need.toFixed(0)} GB even at 4-bit, more than your machine has, so use a hosted path.`
+      : "This model is API-only."}</p>
+    <div class="tabs" role="tablist">
+      ${paths.map(p => `<button role="tab" data-tab="${p}" aria-selected="${p === first}">${
+        p === "local" ? "Run locally" : p === "native" ? `${nat.name} SDK` : "OpenRouter"}</button>`).join("")}
+    </div>`;
+
+  /* local */
+  if(paths.includes("local")){
+    const q = (fit.opts.find(o => o.verdict === "yes") || fit.opts[0]).k;
+    html += `<div data-panel="local" ${first === "local" ? "" : "hidden"}>
+      ${runs ? `<div class="flag g"><span class="ic">✓</span><span>At <b>${q}</b> this needs
+        <b>${fit.best.need.toFixed(0)} GB</b> of your ${fit.avail.toFixed(0)} GB and should generate around
+        <b>${Math.round(fit.best.tps)} tokens/sec</b>.</span></div>`
+        : `<div class="flag w"><span class="ic">⚠</span><span>This does not fit your current machine —
+        the commands are here for reference, or for a bigger box.</span></div>`}
+      ${step(1, "Pick a runner", `<p><b>Ollama</b> is the least effort and fine for one user at a time.
+        <b>llama.cpp</b> gives you more control over quantization and offload. <b>vLLM</b> is what you want if
+        several requests hit it at once — it batches them, which is where throughput actually comes from.</p>`)}
+      ${step(2, "Pull and run it", `<p>Ollama, straight from the Hugging Face repo:</p>
+        ${codeBlock("bash", `ollama run hf.co/${m.hfId}-GGUF:${q}`)}
+        <p>Or llama.cpp as a local OpenAI-compatible server:</p>
+        ${codeBlock("bash", `llama-server -hf ${m.hfId}-GGUF:${q} \\\n  --ctx-size ${Math.min(32768, m.ctx)} --port 8080`)}
+        <p>Or vLLM, for concurrent traffic (full precision — size it to your GPU):</p>
+        ${codeBlock("bash", `vllm serve ${m.hfId} \\\n  --max-model-len ${Math.min(32768, m.ctx)}`)}
+        <p style="color:var(--ink-3);font-size:12.5px">GGUF repo names vary — if the tag above 404s, search
+        <a href="https://huggingface.co/models?search=${encodeURIComponent((m.hfId||"").split("/").pop() + " gguf")}"
+        target="_blank" rel="noopener">Hugging Face for a GGUF build</a> and use that repo id.</p>`)}
+      ${step(3, "Call it", `<p>Every one of those speaks the OpenAI chat format on localhost:</p>
+        ${codeBlock("python", `from openai import OpenAI\n\nclient = OpenAI(base_url="http://localhost:8080/v1", api_key="not-needed")\n\nresp = client.chat.completions.create(\n    model="${(m.hfId || m.slug).split("/").pop()}",\n    messages=[{"role": "user", "content": "Hello"}],\n)\nprint(resp.choices[0].message.content)`)}`)}
+    </div>`;
+  }
+
+  /* openrouter */
+  html += `<div data-panel="openrouter" ${first === "openrouter" ? "" : "hidden"}>
+    <p style="font-size:13.5px;color:var(--ink-2);margin-bottom:16px;line-height:1.6">One key and one API shape
+      for every model in this catalog — the fastest way to try several before committing to a provider SDK.</p>
+    ${step(1, "Get a key", `<p>Create one at <a href="https://openrouter.ai/keys" target="_blank" rel="noopener">openrouter.ai/keys</a>, then:</p>
+      ${codeBlock("bash", `export OPENROUTER_API_KEY="sk-or-..."`)}`)}
+    ${step(2, "Call it", `${codeBlock("python", `from openai import OpenAI\nimport os\n\nclient = OpenAI(\n    base_url="https://openrouter.ai/api/v1",\n    api_key=os.environ["OPENROUTER_API_KEY"],\n)\n\nresp = client.chat.completions.create(\n    model="${m.id}",\n    messages=[{"role": "user", "content": "Hello"}],\n)\nprint(resp.choices[0].message.content)`)}
+      <p>Or without an SDK:</p>
+      ${codeBlock("bash", `curl https://openrouter.ai/api/v1/chat/completions \\\n  -H "Authorization: Bearer $OPENROUTER_API_KEY" \\\n  -H "Content-Type: application/json" \\\n  -d '{"model":"${m.id}","messages":[{"role":"user","content":"Hello"}]}'`)}`)}
+  </div>`;
+
+  /* native */
+  if(nat){
+    html += `<div data-panel="native" ${first === "native" ? "" : "hidden"}>
+      <p style="font-size:13.5px;color:var(--ink-2);margin-bottom:16px;line-height:1.6">Going direct to
+        ${esc(nat.name)} gets you the features the aggregator does not expose — and, as the cost table shows,
+        sometimes a different price.</p>
+      ${step(1, "Install and authenticate", `${codeBlock("bash", `${nat.install}\nexport ${nat.env}="..."`)}`)}
+      ${step(2, "Call it", `${codeBlock("python", nat.py)}${
+        nat.note ? `<p style="margin-top:10px">${nat.note}</p>` : ""}`)}
+      ${step(3, "Read the docs", `<p><a href="${nat.docs}" target="_blank" rel="noopener">${nat.docs}</a> —
+        confirm the exact model id there before you ship; providers rename and retire them.</p>`)}
+    </div>`;
+  }
+  html += `</div>`;
+
+  /* ── before you ship ── */
+  const checks = [];
+  if(m.cacheRead != null) checks.push(`<b>Turn on prompt caching.</b> Cached input costs ${pMil(m.cacheRead)} against
+    ${pMil(m.inP)} — ${Math.round((1 - m.cacheRead / Math.max(m.inP, 1e-12)) * 100)}% off. Put your system prompt and
+    tool definitions first and keep them byte-identical between calls${STATE.vol.cache ? `. Your brief assumes ${STATE.vol.cache}% cached, so the ${fmtUsd(c.month)} figure already depends on this` : `; you set the cacheable share to 0%, so none of that saving is in the estimate above`}.`);
+  if(m.batch) checks.push(`<b>Use the batch tier for anything not interactive.</b> ${fmtUsd(
+    apiMonthly({ ...m, inP:m.batch.inP, outP:m.batch.outP, cacheRead:null, overrides:[] }, STATE.vol, false).month)}/mo
+    instead of ${fmtUsd(c.month)}/mo, at the cost of waiting.`);
+  if(m.fp && m.fp.inP != null){
+    const fpc = apiMonthly(m, STATE.vol, true);
+    if(Math.abs(fpc.month - c.month) / Math.max(1e-9, c.month) > 0.05)
+      checks.push(`<b>Confirm the price before you budget.</b> Our two sources disagree: ${fmtUsd(c.month)}/mo via the
+        aggregator, ${fmtUsd(fpc.month)}/mo at the provider's published rate.${
+        m.fp.url ? ` <a href="${esc(m.fp.url)}" target="_blank" rel="noopener">Provider's page →</a>` : ""}`);
+  }
+  if(s && s.coverage < 0.6) checks.push(`<b>This model is only partly measured.</b> Just
+    ${Math.round(s.coverage * 100)}% of what your task needs has published benchmark scores, so its ranking here is a
+    weaker signal than usual. Worth an eval on your own data before you commit.`);
+  if(m.open) checks.push(`<b>Read the licence.</b> ${fit && fit.license && fit.license !== "other"
+    ? `This one reports <span class="mono">${esc(fit.license)}</span>, but confirm on the model card.`
+    : `It reports <span class="mono">other</span> — a custom licence, which usually means conditions on commercial use.`}`);
+  checks.push(`<b>Write a small eval before you tune anything.</b> Twenty real examples with a pass/fail you agree on
+    is enough to tell whether a cheaper model would have done, and it is the only way to know a prompt change helped.`);
+  if(m.ctx < 200000) checks.push(`<b>Mind the ${fmtTok(m.ctx)} context ceiling.</b> Your brief sends
+    ${fmtTok(STATE.vol.inTok)} per request; leave room for conversation growth and the reply.`);
+
+  html += `<div class="su-sec"><h2>Before you ship</h2>
+    <p class="lead">The things that usually cost people money or a rewrite, specific to this model and your numbers.</p>
+    ${checks.map(x => `<div class="check"><span class="bx"></span><span>${x}</span></div>`).join("")}</div>`;
+
+  html += `<div class="su-sec"><h2>Keep checking</h2>
+    <p class="lead">Prices and models move fast — this page was generated from data fetched
+      ${STATE.fetchedAt ? ago(STATE.fetchedAt) : "just now"}. Hit <b>Refresh models</b> in the header before you
+      make a decision that matters, and verify the rate on the provider's own page before you commit budget.</p></div>`;
+  return html;
+}
+
+function openSetup(id){
+  const m = STATE.catalog.find(x => x.id === id);
+  if(!m) return;
+  SETUP_MODEL = m;
+  $("#suBody").innerHTML = setupPage(m);
+  $("#setup").hidden = false;
+  document.body.style.overflow = "hidden";
+  $("#setup").scrollTop = 0;
+  $("#suBack").focus();
+  bindSetup();
+}
+function closeSetup(){
+  $("#setup").hidden = true;
+  document.body.style.overflow = "";
+}
+let SETUP_MODEL = null;
+
+function bindSetup(){
+  $$("#setup [data-tab]").forEach(b => b.addEventListener("click", () => {
+    $$("#setup [data-tab]").forEach(o => o.setAttribute("aria-selected", String(o === b)));
+    $$("#setup [data-panel]").forEach(p => p.hidden = p.dataset.panel !== b.dataset.tab);
+  }));
+  $$("#setup [data-code]").forEach(b => b.addEventListener("click", () => {
+    navigator.clipboard.writeText(b.parentElement.querySelector("pre").textContent)
+      .then(() => { b.textContent = "✓ Copied"; setTimeout(() => b.textContent = "Copy", 1400); })
+      .catch(() => { b.textContent = "Select it"; setTimeout(() => b.textContent = "Copy", 1400); });
+  }));
+  bindTips();
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   8. TOOLTIPS
+   ═══════════════════════════════════════════════════════════════════════ */
+const tipEl = () => $("#tip");
+function showTip(anchor, html){
+  const t = tipEl();
+  t.innerHTML = html;
+  t.classList.add("on");
+  const r = anchor.getBoundingClientRect(), tr = t.getBoundingClientRect();
+  let left = r.left + r.width / 2 - tr.width / 2;
+  left = Math.max(10, Math.min(left, innerWidth - tr.width - 10));
+  let top = r.top - tr.height - 9;
+  if(top < 66) top = r.bottom + 9;
+  t.style.left = left + "px";
+  t.style.top = top + "px";
+}
+function hideTip(){ tipEl().classList.remove("on"); }
+
+function bindTips(){
+  $$("[data-help]").forEach(el => {
+    if(el.dataset.bound) return;
+    el.dataset.bound = "1";
+    const txt = () => HELP[el.dataset.help] || el.dataset.help;
+    el.addEventListener("mouseenter", () => showTip(el, txt()));
+    el.addEventListener("focus", () => showTip(el, txt()));
+    el.addEventListener("mouseleave", hideTip);
+    el.addEventListener("blur", hideTip);
+    el.addEventListener("click", e => {
+      e.preventDefault(); e.stopPropagation();
+      tipEl().classList.contains("on") ? hideTip() : showTip(el, txt());
+    });
+  });
+  $$("[data-tip]").forEach(el => {
+    if(el.dataset.bound) return;
+    el.dataset.bound = "1";
+    el.addEventListener("mousemove", e => {
+      const t = tipEl();
+      t.textContent = el.dataset.tip.replace(/&#10;/g, "\n");
+      t.style.whiteSpace = "pre-line";
+      t.classList.add("on");
+      t.style.left = Math.min(e.clientX + 14, innerWidth - 250) + "px";
+      t.style.top = (e.clientY + 16) + "px";
+    });
+    el.addEventListener("mouseleave", hideTip);
+  });
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   9. WIRING
+   ═══════════════════════════════════════════════════════════════════════ */
+function openStep(n){
+  $$(".step").forEach(s => {
+    const on = s.id === "s" + n;
+    s.dataset.open = on ? "1" : "";
+    s.querySelector(".step-hd").setAttribute("aria-expanded", String(on));
+  });
+}
+function syncBrief(){
+  const t = STATE.task ? TASKS[STATE.task].label : null;
+  $("#s1a").textContent = t || "not chosen yet";
+  $("#s1").classList.toggle("answered", !!t);
+
+  const dep = { api:"Hosted API", local:"My machine", both:"Compare both" }[STATE.deploy];
+  const extra = [STATE.reqOpen && "open weights", STATE.reqPrivate && "on-prem only"].filter(Boolean);
+  $("#s2a").textContent = dep + (extra.length ? " · " + extra.join(" · ") : "");
+  $("#s2").classList.add("answered");
+
+  const showHw = STATE.deploy !== "api" || STATE.reqPrivate;
+  $("#s3").style.display = showHw ? "" : "none";
+  $("#s3a").textContent = `${STATE.hw.gpu} · ${STATE.hw.vram} GB`;
+  $("#s3").classList.toggle("answered", STATE.hwSet === true);
+
+  $("#s4a").textContent = `${STATE.vol.req.toLocaleString()} req/day · ${fmtTok(STATE.vol.inTok)} in / ${fmtTok(STATE.vol.outTok)} out`;
+  $("#s4").classList.add("answered");
+
+  const caps = [...STATE.caps].map(k => (CAPS.find(c => c.k === k) || {}).label).filter(Boolean);
+  $("#s5a").textContent = (STATE.minCtx ? fmtTok(STATE.minCtx) + " context" : "no minimum")
+    + (caps.length ? " · " + caps.join(", ") : "");
+  $("#s5").classList.add("answered");
+
+  const done = [!!STATE.task, true, !showHw || STATE.hwSet, true, true].filter(Boolean).length;
+  $("#briefProg").textContent = STATE.task ? `${Math.min(done, 5)} of ${showHw ? 5 : 4} set` : "";
+
+  const monthly = STATE.vol.req * 30 * (STATE.vol.inTok + STATE.vol.outTok);
+  $("#volNote").innerHTML = `That is <b>${fmtTok(monthly)} tokens a month</b>.` +
+    (STATE.vol.cache > 0 ? ` With ${STATE.vol.cache}% cached you are billed the full rate on only
+       ${fmtTok(STATE.vol.req * 30 * STATE.vol.inTok * (1 - STATE.vol.cache / 100))} of the input.` :
+     ` If a fixed system prompt or tool schema repeats on every call, raise the cacheable slider — it often
+       saves more than switching model.`);
+}
+
+function setTask(k, explicit){
+  STATE.task = k;
+  $$("#taskChips .chip").forEach(c => c.setAttribute("aria-pressed", String(c.dataset.task === k)));
+  const t = TASKS[k];
+  if(!STATE.volEdited && t.vol){
+    STATE.vol.inTok = t.vol.inTok; STATE.vol.outTok = t.vol.outTok;
+    $("#vIn").value = t.vol.inTok; $("#vOut").value = t.vol.outTok;
+  }
+  if(t.minCtx && t.minCtx > STATE.minCtx){ STATE.minCtx = t.minCtx; $("#cMinCtx").value = String(t.minCtx); }
+  if(explicit && !STATE.advanced){ STATE.advanced = true; openStep(2); }
+  render();
+}
+
+function machineLabel(){
+  const hw = STATE.hw;
+  $("#machName").textContent = hw.gpu;
+  $("#machSpecs").innerHTML =
+    `<b style="color:var(--ink-2);font-weight:600">${hw.vram} GB</b> ${hw.unified ? "unified memory" : "VRAM"} · ` +
+    `${hw.ram} GB RAM · ${hw.bw} GB/s · ~${hw.watt} W`;
+  const c = $("#machConf");
+  const map = { probe:["est","browser estimate"], shell:["ver","verified"], manual:["man","manual"], "":["man","default"] };
+  const [cls, txt] = map[STATE.hwSource || ""];
+  c.className = "conf " + cls;
+  c.textContent = txt;
+
+  /* The caveat belongs next to the number it undermines, not in a footnote. */
+  const w = $("#machWarn");
+  if(STATE.hwSource === "probe" && hw.note){
+    w.hidden = false;
+    w.innerHTML = `⚠ ${esc(hw.note)} Correct it below, or use <b>Get exact specs</b> for real numbers.`;
+  } else w.hidden = true;
+}
+/* ── machine picker: family → device → memory, instead of a terminal ── */
+const FAMS = [
+  { k:"apple",  label:"Apple Silicon", test:g => /^Apple/.test(g.n) },
+  { k:"nvidia", label:"NVIDIA GPU",    test:g => /^NVIDIA/.test(g.n) && !/H100|A100|RTX 6000/.test(g.n) },
+  { k:"amd",    label:"AMD GPU",       test:g => /^AMD/.test(g.n) },
+  { k:"cloud",  label:"Cloud GPU",     test:g => /H100|A100|RTX 6000/.test(g.n) },
+  { k:"cpu",    label:"No GPU",        test:g => /^CPU/.test(g.n) }
+];
+const APPLE_MEM = [8, 16, 18, 24, 32, 36, 48, 64, 96, 128, 192];
+const RAM_OPTS  = [8, 16, 32, 64, 128];
+
+function pickGpu(g){
+  if(!g) return;
+  STATE.hw = { ...STATE.hw, gpu:g.n, bw:g.bw, watt:g.w, idle:g.idle, unified:!!g.uni,
+               vram: g.uni ? STATE.hw.ram : g.vram, note:null };
+  STATE.hwSource = "manual"; STATE.hwSet = true;
+  fillHwForm(); renderPicker(); render(); pulse();
+}
+
+function renderPicker(){
+  $("#famChips").innerHTML = FAMS.map(f =>
+    `<button class="chip pk" data-fam="${f.k}" aria-pressed="${STATE.hwFam === f.k}" type="button">${f.label}</button>`).join("");
+
+  const wrap = $("#chipWrap"), mw = $("#memWrap");
+  if(!STATE.hwFam){ wrap.hidden = true; mw.hidden = true; return; }
+
+  const fam = FAMS.find(f => f.k === STATE.hwFam);
+  const list = GPUS.filter(fam.test);
+  wrap.hidden = list.length < 2;
+  $("#chipLab").textContent = fam.k === "apple" ? "Which chip?" : "Which card?";
+  $("#gpuChips").innerHTML = list.map(g =>
+    `<button class="chip pk" data-gpu="${esc(g.n)}" aria-pressed="${STATE.hw.gpu === g.n}" type="button">${
+      esc(g.n.replace(/^(NVIDIA|AMD|Apple)\s+/, ""))}${g.vram ? ` <small>${g.vram}GB</small>` : ""}</button>`).join("");
+
+  /* Apple and CPU share memory with the OS, so the amount is the user's to state.
+     A discrete card's VRAM is fixed — what still matters there is system RAM for offload. */
+  const inFam = list.some(g => g.n === STATE.hw.gpu);
+  mw.hidden = !inFam;
+  if(inFam){
+    const uni = STATE.hw.unified;
+    const opts = uni ? APPLE_MEM : RAM_OPTS;
+    const cur = uni ? STATE.hw.vram : STATE.hw.ram;
+    $("#memLab").innerHTML = (uni ? "How much unified memory?" : "How much system RAM?") +
+      ` <button class="help" data-help="vram" aria-label="Explain memory" type="button">?</button>`;
+    $("#memChips").innerHTML = opts.map(v =>
+      `<button class="chip pk mem" data-mem="${v}" aria-pressed="${cur === v}" type="button">${v} GB</button>`).join("");
+  }
+  bindTips();
+}
+
+function fillHwForm(){
+  const hw = STATE.hw;
+  $("#hwVram").value = Math.round(hw.vram);
+  $("#hwRam").value = Math.round(hw.ram);
+  $("#hwBw").value = Math.round(hw.bw);
+  $("#hwWatt").value = Math.round(hw.watt);
+  $("#hwUnified").checked = !!hw.unified;
+  machineLabel();
+}
+function flash(sel, txt){
+  const el = $(sel), old = el.innerHTML;
+  el.innerHTML = txt;
+  setTimeout(() => { el.innerHTML = old; }, 1500);
+}
+function pulse(){
+  const o = $("#out .verdict");
+  if(!o) return;
+  o.classList.remove("flashing"); void o.offsetWidth; o.classList.add("flashing");
+}
+
+function buildUI(){
+  /* stepper */
+  $$(".step-hd").forEach(b => b.addEventListener("click", () => {
+    const s = b.closest(".step");
+    openStep(s.dataset.open === "1" ? 0 : s.id.slice(1));
+  }));
+
+  /* Q1 */
+  $("#taskChips").innerHTML = Object.entries(TASKS)
+    .map(([k, t]) => `<button class="chip" data-task="${k}" aria-pressed="false" type="button">${esc(t.label)}</button>`).join("");
+  $("#taskChips").addEventListener("click", e => {
+    const b = e.target.closest("[data-task]"); if(!b) return;
+    STATE.taskLocked = true; setTask(b.dataset.task, true);
+  });
+  $("#taskFree").addEventListener("input", e => {
+    STATE.taskFree = e.target.value;
+    const g = inferTask(e.target.value);
+    const box = $("#taskGuess");
+    if(g && !STATE.taskLocked){
+      box.hidden = false;
+      box.innerHTML = `Matched to <b>${esc(TASKS[g].label)}</b> — tap a different chip above to override.`;
+      setTask(g, false);
+    } else if(g){
+      box.hidden = false;
+      box.innerHTML = `That reads like <b>${esc(TASKS[g].label)}</b>. <button class="linky" id="useGuess" type="button">Use it</button>`;
+      $("#useGuess").addEventListener("click", () => setTask(g, false));
+    } else box.hidden = true;
+  });
+
+  /* Q2 */
+  $("#deploySeg").addEventListener("click", e => {
+    const b = e.target.closest("[data-v]"); if(!b) return;
+    STATE.deploy = b.dataset.v;
+    [...e.currentTarget.children].forEach(c => c.setAttribute("aria-pressed", String(c === b)));
+    if(b.dataset.v !== "api") openStep(3);
+    render();
+  });
+  $("#reqOpen").addEventListener("change", e => { STATE.reqOpen = e.target.checked; render(); pulse(); });
+  $("#reqPrivate").addEventListener("change", e => {
+    STATE.reqPrivate = e.target.checked;
+    if(e.target.checked){
+      STATE.deploy = "local";
+      [...$("#deploySeg").children].forEach(c => c.setAttribute("aria-pressed", String(c.dataset.v === "local")));
+    }
+    render(); pulse();
+  });
+
+  /* Q3 — machine picker */
+  $("#famChips").addEventListener("click", e => {
+    const b = e.target.closest("[data-fam]"); if(!b) return;
+    STATE.hwFam = b.dataset.fam;
+    const list = GPUS.filter(FAMS.find(f => f.k === STATE.hwFam).test);
+    if(list.length === 1) pickGpu(list[0]);        /* nothing to choose */
+    renderPicker();
+  });
+  $("#gpuChips").addEventListener("click", e => {
+    const b = e.target.closest("[data-gpu]"); if(!b) return;
+    pickGpu(GPUS.find(g => g.n === b.dataset.gpu));
+  });
+  $("#memChips").addEventListener("click", e => {
+    const b = e.target.closest("[data-mem]"); if(!b) return;
+    const v = +b.dataset.mem;
+    if(STATE.hw.unified){ STATE.hw.vram = v; STATE.hw.ram = v; }
+    else STATE.hw.ram = v;
+    STATE.hwSource = "manual"; STATE.hwSet = true;
+    fillHwForm(); renderPicker(); render(); pulse();
+  });
+  [["hwVram","vram"],["hwRam","ram"],["hwBw","bw"],["hwWatt","watt"]].forEach(([id, k]) =>
+    $("#" + id).addEventListener("input", e => {
+      STATE.hw[k] = parseFloat(e.target.value) || 0;
+      STATE.hwSource = "manual"; STATE.hwSet = true;
+      machineLabel(); render();
+    }));
+  $("#hwUnified").addEventListener("change", e => { STATE.hw.unified = e.target.checked; render(); });
+  $("#kwh").addEventListener("input", e => { STATE.kwh = parseFloat(e.target.value) || 0; render(); });
+  $("#hwCost").addEventListener("input", e => { STATE.hwCost = parseFloat(e.target.value) || 0; render(); });
+
+  $$("[data-mach]").forEach(b => b.addEventListener("click", () => {
+    const panel = $("#machAdv");
+    panel.hidden = !panel.hidden;
+    b.textContent = panel.hidden ? "Fine-tune specs ›" : "Hide";
+  }));
+
+  $("#shellCmd").value = SHELL_UNIX;
+  $("#btnCopyCmd").addEventListener("click", () => {
+    navigator.clipboard.writeText($("#shellCmd").value)
+      .then(() => flash("#btnCopyCmd", "✓ Copied")).catch(() => flash("#btnCopyCmd", "Select it manually"));
+  });
+  let win = false;
+  $("#btnWinCmd").addEventListener("click", () => {
+    win = !win;
+    $("#shellCmd").value = win ? SHELL_WIN : SHELL_UNIX;
+    $("#btnWinCmd").textContent = win ? "macOS / Linux" : "Windows";
+  });
+  $("#btnParseShell").addEventListener("click", () => {
+    const p = parseShell($("#shellOut").value);
+    if(!p){ $("#shellMsg").innerHTML = `<span style="color:var(--crit)">Couldn't read that.</span>
+      Expected <span class="mono">key=value</span> lines from the command above — paste the whole output.`; return; }
+    STATE.hw = { ...STATE.hw, ...p }; STATE.hwSource = "shell"; STATE.hwSet = true;
+    fillHwForm();
+    $("#shellMsg").innerHTML = `<span style="color:var(--good)">✓ ${esc(p.note)}</span>`;
+    render(); pulse();
+  });
+
+  $("#btnProbe").addEventListener("click", async () => {
+    const b = $("#btnProbe");
+    b.disabled = true; b.innerHTML = `<span class="spin"></span> Detecting…`;
+    const p = await probeMachine();
+    STATE.hw = { ...STATE.hw, ...p }; STATE.hwSource = "probe"; STATE.hwSet = true;
+    fillHwForm();
+    b.disabled = false; b.innerHTML = `<span aria-hidden="true">⚡</span> Detect again`;
+    STATE.hwFam = FAMS.find(f => f.test(GPUS.find(g => g.n === STATE.hw.gpu) || {})) ?
+      FAMS.find(f => f.test(GPUS.find(g => g.n === STATE.hw.gpu))).k : null;
+    renderPicker();
+    render(); pulse();
+  });
+
+  /* Q4 */
+  $("#scalePresets").innerHTML = SCALE_PRESETS.map(p =>
+    `<button class="chip" data-scale="${p.k}" aria-pressed="false" type="button">${esc(p.label)}<small>${esc(p.note)}</small></button>`).join("");
+  $("#scalePresets").addEventListener("click", e => {
+    const b = e.target.closest("[data-scale]"); if(!b) return;
+    STATE.vol.req = SCALE_PRESETS.find(x => x.k === b.dataset.scale).req;
+    $("#vReq").value = STATE.vol.req;
+    [...e.currentTarget.children].forEach(c => c.setAttribute("aria-pressed", String(c === b)));
+    render(); pulse();
+  });
+  [["vReq","req"],["vIn","inTok"],["vOut","outTok"]].forEach(([id, k]) =>
+    $("#" + id).addEventListener("input", e => {
+      STATE.vol[k] = parseFloat(e.target.value) || 0;
+      if(k !== "req") STATE.volEdited = true;
+      if(k === "req") $$("#scalePresets .chip").forEach(c =>
+        c.setAttribute("aria-pressed", String(SCALE_PRESETS.find(x => x.k === c.dataset.scale).req === STATE.vol.req)));
+      render();
+    }));
+  $("#vCache").addEventListener("input", e => {
+    STATE.vol.cache = +e.target.value; $("#vCacheL").textContent = e.target.value + "%"; render();
+  });
+
+  /* Q5 */
+  $("#capChips").innerHTML = CAPS.map(c =>
+    `<button class="chip" data-cap="${c.k}" aria-pressed="false" type="button">${esc(c.label)}</button>`).join("");
+  $("#capChips").addEventListener("click", e => {
+    const b = e.target.closest("[data-cap]"); if(!b) return;
+    const on = b.getAttribute("aria-pressed") === "true";
+    b.setAttribute("aria-pressed", String(!on));
+    on ? STATE.caps.delete(b.dataset.cap) : STATE.caps.add(b.dataset.cap);
+    render(); pulse();
+  });
+  $("#cMinCtx").addEventListener("change", e => { STATE.minCtx = +e.target.value; render(); pulse(); });
+  $("#cLat").addEventListener("change", e => { STATE.latency = e.target.value; render(); });
+
+  /* header — manual refresh of the live catalog */
+  $("#btnRefresh").addEventListener("click", async () => {
+    const b = $("#btnRefresh");
+    if(b.classList.contains("spinning")) return;
+    b.classList.add("spinning");
+    $("#refreshTxt").textContent = "Fetching…";
+    srcPill("live", "re-reading the live sources…");
+    const before = STATE.catalog.length;
+    try{ localStorage.removeItem(CACHE_KEY); }catch(e){}
+    await fetchFresh(true);
+    b.classList.remove("spinning");
+    const d = STATE.catalog.length - before;
+    $("#refreshTxt").textContent = d > 0 ? `+${d} new` : d < 0 ? `${d} removed` : "Up to date";
+    setTimeout(() => { $("#refreshTxt").textContent = "Refresh models"; }, 2600);
+    if(STATE.task){ render(); pulse(); }
+  });
+  /* keep the "updated Xm ago" label honest without re-fetching */
+  setInterval(() => {
+    if(STATE.loaded && STATE.fetchedAt){
+      const open = STATE.catalog.filter(m => m.open).length;
+      srcPill("ok", `${STATE.catalog.length} models · ${open} open · updated ${ago(STATE.fetchedAt)}`);
+    }
+  }, 60000);
+
+  /* setup page */
+  $("#suBack").addEventListener("click", closeSetup);
+  $("#suCopy").addEventListener("click", () => {
+    if(!SETUP_MODEL) return;
+    const m = SETUP_MODEL, c = apiMonthly(m, STATE.vol, false);
+    const txt = $("#suBody").innerText.replace(/\nCopy\n/g, "\n");
+    navigator.clipboard.writeText(`# Setting up ${m.name} (${m.provider})\n\n` +
+      `${fmtUsd(c.month)}/month at ${STATE.vol.req.toLocaleString()} req/day · ` +
+      `${pMil(m.inP)}/${pMil(m.outP)} per 1M · ${fmtTok(m.ctx)} context\n\n${txt}`)
+      .then(() => flash("#suCopy", "✓ Copied")).catch(() => flash("#suCopy", "Copy failed"));
+  });
+
+  /* header */
+  $("#btnTheme").addEventListener("click", () => {
+    const cur = document.documentElement.getAttribute("data-theme");
+    document.documentElement.setAttribute("data-theme",
+      cur === "dark" ? "light" : cur === "light" ? "dark"
+        : (matchMedia("(prefers-color-scheme: dark)").matches ? "light" : "dark"));
+  });
+  $("#btnCopy").addEventListener("click", copySummary);
+
+  /* drawer */
+  $("#drClose").addEventListener("click", closeDrawer);
+  $(".dr-back").addEventListener("click", closeDrawer);
+  addEventListener("keydown", e => {
+    if(e.key === "Escape"){
+      if(!$("#setup").hidden) closeSetup();
+      else if(!$("#drawer").hidden) closeDrawer();
+      else hideTip();
+    }
+  });
+  addEventListener("scroll", hideTip, { passive:true });
+
+  fillHwForm();
+  renderPicker();
+  bindTips();
+}
+
+function bindUse(root){
+  (root || document).querySelectorAll("[data-use-model]").forEach(el => {
+    if(el.dataset.uBound) return;
+    el.dataset.uBound = "1";
+    el.addEventListener("click", e => {
+      e.stopPropagation();
+      closeDrawer();
+      openSetup(el.dataset.useModel);
+    });
+  });
+}
+
+function bindResults(){
+  $$("[data-open-model]").forEach(el =>
+    el.addEventListener("click", () => openModel(el.dataset.openModel)));
+  bindUse();
+  $$("[data-scroll]").forEach(el => el.addEventListener("click", () => {
+    const t = $(el.dataset.scroll);
+    if(t){ t.open = true; t.scrollIntoView({ behavior:"smooth", block:"start" }); }
+  }));
+  bindTips();
+}
+
+function copySummary(){
+  if(!LAST){ flash("#btnCopy", "Pick a task first"); return; }
+  const R = LAST, top = R.scored.slice(0, 5), L = [];
+  L.push(`# LLM Finder — ${R.task.label}`);
+  L.push(`_${new Date().toLocaleString()} · catalog fetched live from OpenRouter + AI Pricing Guru_`, "");
+  L.push(`**Workload:** ${STATE.vol.req.toLocaleString()} req/day · ${STATE.vol.inTok.toLocaleString()} in / ${STATE.vol.outTok.toLocaleString()} out tokens · ${STATE.vol.cache}% cacheable`);
+  L.push(`**Constraints:** ≥${fmtTok(STATE.minCtx)} context${STATE.caps.size ? " · " + [...STATE.caps].join(", ") : ""}${STATE.reqOpen ? " · open weights required" : ""}${STATE.reqPrivate ? " · data stays on-prem" : ""}`);
+  L.push(`**Ranking:** ${Math.round(R.qw * 100)}% quality / ${Math.round(R.cw * 100)}% cost`, "");
+  L.push(`## Recommendation: ${top[0].m.name} (${top[0].m.provider}) — ${fmtUsd(top[0].cost)}/month`, "");
+  L.push("| # | Model | Provider | Ctx | $/1M in | $/1M out | Monthly | Quality | Fit |");
+  L.push("|---|---|---|---|---|---|---|---|---|");
+  top.forEach((s, i) => {
+    const c = apiMonthly(s.m, STATE.vol, false);
+    L.push(`| ${i + 1} | ${s.m.name}${s.m.open ? " *(open)*" : ""} | ${s.m.provider} | ${fmtTok(s.m.ctx)} | ${pMil(c.inP)} | ${pMil(c.outP)} | ${fmtUsd(c.month)} | ${s.quality.toFixed(0)} | ${s.fit.toFixed(1)} |`);
+  });
+  if(R.wantLocal){
+    const f = R.scored.filter(s => s.m.open).map(s => ({ s, fit: localFitFor(s.m) }))
+      .filter(x => x.fit && x.fit.best && x.fit.best.verdict === "yes");
+    L.push("", `**On ${STATE.hw.gpu} (${STATE.hw.vram} GB):** ` + (f.length
+      ? f.slice(0, 3).map(c => `${c.s.m.name} at ${c.fit.best.k}, ~${Math.round(c.fit.best.tps)} tok/s`).join("; ")
+      : "nothing on the shortlist fits."));
+  }
+  L.push("", "_Estimates. Verify prices with the provider before committing budget._");
+  navigator.clipboard.writeText(L.join("\n"))
+    .then(() => flash("#btnCopy", "✓ Copied")).catch(() => flash("#btnCopy", "Copy failed"));
+}
+
+/* boot */
+buildUI();
+render();
+loadCatalog();
+</script>
+</body>
+</html>

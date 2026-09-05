@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Invoice Data Entry</title>
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 760px; margin: 30px auto; font-size: 14px; }
+  label { display: block; margin-top: 10px; font-weight: 600; }
+  input { width: 100%; padding: 6px; box-sizing: border-box; }
+  .row { display: grid; grid-template-columns: 3fr 1fr 1fr 1.2fr 1.4fr; gap: 6px; margin-top: 6px; }
+  .row input { margin: 0; }
+  button { margin-top: 14px; padding: 8px 18px; }
+  h1 { font-size: 18px; }
+  .hint { color: #666; font-size: 12px; }
+</style>
+</head>
+<body>
+  <h1>Invoice Data Entry</h1>
+  <p class="hint">Every input below has a stable <code>id</code>. That is not politeness -- it is what
+  makes this form automatable. Forms without stable ids/names force bots into brittle XPath
+  guessing. Accessibility and automatability are the same property.</p>
+
+  <!-- No <form> POST: the page submits via fetch() so Playwright sees a clean
+       navigation to /invoice/{id} it can wait for. -->
+  <label for="vendor">Vendor name</label><input id="vendor">
+  <label for="city">City</label><input id="city">
+  <label for="gstin">GSTIN <span class="hint">(leave blank if absent)</span></label><input id="gstin">
+  <label for="invoice_no">Invoice number</label><input id="invoice_no">
+  <label for="date">Invoice date <span class="hint">(free text -- print what you type)</span></label><input id="date">
+
+  <h3>Line items</h3>
+  <div class="row hint"><span>Description</span><span>HSN</span><span>Qty</span><span>Rate</span><span>Amount</span></div>
+  <div id="items"></div>
+  <button type="button" id="add_item">+ Add row</button>
+
+  <label for="cgst">CGST</label><input id="cgst">
+  <label for="sgst">SGST</label><input id="sgst">
+  <label for="total">Grand total</label><input id="total">
+
+  <button type="button" id="submit_btn">Generate invoice</button>
+
+<script>
+  const itemsDiv = document.getElementById("items");
+  function addRow() {
+    const i = itemsDiv.children.length;
+    const row = document.createElement("div");
+    row.className = "row";
+    row.innerHTML = `
+      <input id="item_${i}_description">
+      <input id="item_${i}_hsn">
+      <input id="item_${i}_qty">
+      <input id="item_${i}_rate">
+      <input id="item_${i}_amount">`;
+    itemsDiv.appendChild(row);
+  }
+  addRow(); // start with one row
+  document.getElementById("add_item").addEventListener("click", addRow);
+
+  document.getElementById("submit_btn").addEventListener("click", async () => {
+    const g = id => document.getElementById(id).value;
+    const items = [];
+    for (let i = 0; i < itemsDiv.children.length; i++) {
+      if (!g(`item_${i}_description`)) continue;
+      items.push({
+        description: g(`item_${i}_description`), hsn: g(`item_${i}_hsn`) || null,
+        qty: parseFloat(g(`item_${i}_qty`)), rate: parseFloat(g(`item_${i}_rate`)),
+        amount: parseFloat(g(`item_${i}_amount`)),
+      });
+    }
+    const payload = {
+      vendor: g("vendor"), city: g("city"), gstin: g("gstin") || null,
+      invoice_no: g("invoice_no"), date: g("date"), items,
+      cgst: parseFloat(g("cgst")), sgst: parseFloat(g("sgst")), total: parseFloat(g("total")),
+    };
+    const res = await fetch("/submit", { method: "POST",
+      headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+    const { id } = await res.json();
+    window.location.href = `/invoice/${id}`;   // navigation the bot can await
+  });
+</script>
+</body>
+</html>

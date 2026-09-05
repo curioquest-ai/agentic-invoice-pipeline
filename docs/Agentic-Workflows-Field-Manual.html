@@ -1,0 +1,870 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Attendee manual for GrowthX's Build Agentic Workflows workshop — Bengaluru, 6 September. One pipeline: manufacture a labelled dataset, parse it, grade it.">
+<meta name="color-scheme" content="dark">
+<title>Agentic Workflows Field Manual</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+:root{
+  --mono:'IBM Plex Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
+  --serif:'IBM Plex Sans',-apple-system,'Helvetica Neue',Arial,sans-serif;
+  --display:'Fraunces',Georgia,'Times New Roman',serif;
+  --ground:#070508; --panel:#090a0c; --panel-2:#0b0d0f;
+  --hair:#14171a; --hair-2:#1c2024;
+  --cream:#e8edf2; --body:#9fa5ab; --muted:#7a7f85; --faint:#51565b;
+  --accent:#3fa9ff; --accent-lt:#93cdff;
+  --live:#3ddc97; --warn:#f2b23c; --gap:#f2b23c; --cool:#9d7bff;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:#1d2023;border-radius:3px}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+body{font-family:var(--serif);background:var(--ground);color:var(--body);height:100dvh;overflow:hidden;-webkit-font-smoothing:antialiased}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}
+code{font-family:var(--mono)}
+
+.shell{display:flex;height:100dvh;overflow:hidden}
+.progress-bar{position:fixed;top:0;left:0;right:0;height:2px;z-index:100;background:#0f1113}
+.progress-fill{height:100%;width:0;background:linear-gradient(90deg,var(--accent),var(--accent-lt));transition:width .12s}
+.mobile-toggle{position:fixed;top:10px;left:10px;z-index:200;background:#0f1113;border:1px solid #1d2023;border-radius:8px;color:var(--accent);padding:8px 12px;cursor:pointer;font-family:var(--mono);font-size:13px;display:none}
+
+nav{width:284px;min-width:284px;border-right:1px solid var(--hair);background:#08090b;display:flex;flex-direction:column;padding:24px 0;overflow-y:auto}
+.nav-header{padding:0 24px 26px;border-bottom:1px solid var(--hair)}
+.nav-header .label{font-family:var(--mono);font-size:10.5px;color:var(--faint);text-transform:uppercase;letter-spacing:.15em;margin-bottom:8px}
+.nav-header .title{font-family:var(--display);font-size:23px;font-weight:500;color:var(--cream);line-height:1.15}
+.nav-header .sub{font-family:var(--mono);font-size:10.5px;color:#333a41;margin-top:10px;line-height:1.7}
+.nav-items{padding:18px 12px;flex:1;display:flex;flex-direction:column;gap:2px}
+.nav-btn{display:flex;align-items:center;gap:12px;width:100%;padding:10px 12px;background:transparent;border:none;border-radius:6px;cursor:pointer;border-left:2px solid transparent;text-align:left;transition:background .15s}
+.nav-btn:hover:not(.locked){background:#ffffff05}
+.nav-btn.active{background:#3f9dff0d;border-left-color:var(--accent)}
+.nav-btn.active-brag{background:#3ddc970d;border-left-color:var(--live)}
+.nav-btn.locked{opacity:.32;cursor:not-allowed}
+.nav-btn .icon{font-family:var(--mono);font-size:10.5px;min-width:20px;color:var(--faint)}
+.nav-btn.active .icon{color:var(--accent)}
+.nav-btn.active-brag .icon{color:var(--live)}
+.nav-btn .text{font-family:var(--serif);font-size:14px;color:#757b81;line-height:1.35}
+.nav-btn.active .text,.nav-btn.active-brag .text{color:#dce4ec}
+.nav-btn.done .icon{color:var(--live)}
+.nav-footer{padding:16px 24px;border-top:1px solid var(--hair)}
+.nav-progress{display:flex;gap:4px;margin-bottom:10px}
+.nav-progress div{flex:1;height:3px;border-radius:2px;background:#16191c}
+.nav-progress div.done{background:var(--live)}
+.nav-progress div.current{background:var(--accent)}
+.nav-footer .credit{font-family:var(--mono);font-size:10px;color:#2e3237;line-height:1.7}
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:140;display:none}
+.overlay.show{display:block}
+
+main{flex:1;overflow-y:auto;padding:44px 60px 130px}
+.content{max-width:760px;margin:0 auto;animation:fadeIn .3s ease}
+.section-header .num{font-family:var(--mono);font-size:11.5px;color:var(--accent);letter-spacing:.12em}
+.section-header .num.alt{color:var(--live)}
+.section-header h1{font-family:var(--display);font-size:44px;color:var(--cream);font-weight:500;margin-top:8px;line-height:1.1;letter-spacing:-.02em;text-wrap:balance}
+.section-header .bar{width:46px;height:2px;background:var(--accent);margin-top:20px;border-radius:1px}
+.section-header .bar.alt{background:var(--live)}
+.section-body{margin-top:44px;display:flex;flex-direction:column}
+
+h2.h2{font-size:25px;font-family:var(--display);color:var(--cream);margin:52px 0 14px;font-weight:500;letter-spacing:-.01em;line-height:1.25;text-wrap:balance}
+h2.h2:first-child{margin-top:0}
+h3.h3{font-size:13px;font-family:var(--mono);color:var(--accent);margin:34px 0 10px;font-weight:500;text-transform:uppercase;letter-spacing:.1em}
+p.p{font-size:15.5px;line-height:1.78;color:#9ba1a7;margin-bottom:15px;max-width:66ch}
+strong.b{color:var(--cream);font-weight:600}
+code.c{background:#131518;border:1px solid var(--hair-2);border-radius:4px;padding:1px 6px;font-size:13px;color:var(--accent-lt)}
+.eyebrow{font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:.13em;color:var(--faint);margin-bottom:8px}
+
+.callout{border-radius:10px;padding:16px 20px;margin:22px 0;border:1px solid #3f9dff2e;background:#3f9dff09}
+.callout p{font-family:var(--serif);font-size:15px;line-height:1.75;color:#b6bec6;margin:0}
+.callout.tip{border-color:#3ddc972e;background:#3ddc9709}
+.callout.warning{border-color:#e85d3a2e;background:#e85d3a08}
+.callout.warning p{color:#e0c79a}
+
+.code-block{border:1px solid var(--hair-2);border-radius:9px;background:#040506;margin:18px 0;overflow:hidden}
+.code-block .header{display:flex;justify-content:space-between;align-items:center;padding:8px 14px;border-bottom:1px solid var(--hair);background:#0a0b0d}
+.code-block .header span{font-family:var(--mono);font-size:10.5px;color:var(--faint);text-transform:uppercase;letter-spacing:.1em}
+.copy-code-btn,.brag-copy-btn{background:none;border:1px solid #25292e;border-radius:4px;color:#6a6f74;cursor:pointer;padding:3px 11px;font-size:10.5px;font-family:var(--mono)}
+.copy-code-btn:hover,.brag-copy-btn:hover{color:var(--accent);border-color:#28333f}
+.copy-code-btn.copied{color:var(--live);border-color:#1d4436}
+.code-block pre{padding:14px;overflow-x:auto}
+.code-block code{font-size:12.5px;line-height:1.85;color:#9ea3a8;white-space:pre}
+
+.tbl{border:1px solid var(--hair-2);border-radius:9px;overflow-x:auto;margin:20px 0;background:var(--panel)}
+.tbl table{border-collapse:collapse;width:100%;min-width:560px}
+.tbl th{font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:.11em;color:var(--faint);text-align:left;padding:11px 14px;border-bottom:1px solid var(--hair-2);background:#0b0d0f;font-weight:500}
+.tbl td{font-family:var(--serif);font-size:14px;color:#959ba1;padding:11px 14px;border-bottom:1px solid #111316;line-height:1.6;vertical-align:top}
+.tbl tr:last-child td{border-bottom:none}
+.tbl td:first-child{color:#c4cbd3}
+.tbl td .fx{font-family:var(--mono);font-size:12.5px;color:var(--accent-lt);font-variant-numeric:tabular-nums}
+
+.filter-bar,.cat-bar{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:10px}
+.cat-bar{margin-bottom:22px}
+.filter-btn,.cat-btn{background:none;border:1px solid var(--hair-2);border-radius:20px;padding:5px 13px;font-family:var(--mono);font-size:11px;color:#6a6f74;cursor:pointer}
+.filter-btn:hover,.cat-btn:hover{border-color:#2c3238;color:#91979e}
+.filter-btn.active,.cat-btn.active{border-color:#3f9dff55;color:var(--accent);background:#3f9dff0d}
+.filter-btn.active-p3{border-color:#e85d3a55;color:var(--gap);background:#e85d3a0d}
+.filter-btn.active-p1{border-color:#3ddc9755;color:var(--live);background:#3ddc970d}
+
+.pcard{border:1px solid var(--hair);border-radius:10px;background:var(--panel);margin-bottom:9px;overflow:hidden}
+.pcard.expanded{border-color:#232930}
+.pcard .card-toggle{width:100%;background:none;border:none;cursor:pointer;text-align:left;padding:15px 18px;display:block}
+.card-top{display:flex;justify-content:space-between;align-items:flex-start;gap:16px}
+.card-id{font-family:var(--mono);font-size:11px;color:#393e43}
+.card-title{font-family:var(--serif);font-size:15.5px;color:#d6dce2;line-height:1.4}
+.card-tagline{font-family:var(--serif);font-size:13.5px;color:#73797f;margin-top:5px;line-height:1.6}
+.card-badges{display:flex;align-items:center;gap:7px;flex-shrink:0;padding-top:2px}
+.badge{font-family:var(--mono);font-size:10px;padding:2.5px 8px;border-radius:4px;white-space:nowrap}
+.badge-p3{color:var(--gap);background:#e85d3a12;border:1px solid #e85d3a2b}
+.badge-p2{color:var(--accent);background:#3f9dff12;border:1px solid #3f9dff2b}
+.badge-p1{color:var(--live);background:#3ddc9712;border:1px solid #3ddc972b}
+.badge-stage{color:#6a6f74;background:#131518;border:1px solid var(--hair-2)}
+.arrow{font-family:var(--mono);font-size:12px;color:#393e43}
+.pcard.expanded .arrow{color:var(--accent)}
+.card-body{display:none;padding:0 18px 18px}
+.pcard.expanded .card-body{display:block}
+.qbox{padding:12px 15px;background:#040506;border:1px solid var(--hair);border-radius:8px;font-family:var(--mono);font-size:13px;color:#bec5cd;line-height:1.75}
+.qbox.example{color:#888e94;border-style:dashed}
+.meta-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:16px}
+.meta-grid .k{font-family:var(--mono);font-size:9.5px;color:#454b51;text-transform:uppercase;letter-spacing:.11em;margin-bottom:4px}
+.meta-grid .v{font-family:var(--serif);font-size:13.5px;color:#8d9399;line-height:1.6}
+.winbox{margin-top:14px;padding:11px 15px;background:#3ddc9707;border:1px solid #3ddc971c;border-radius:8px}
+.winbox .k{font-family:var(--mono);font-size:9.5px;color:var(--live);text-transform:uppercase;letter-spacing:.11em;margin-bottom:4px}
+.winbox .v{font-family:var(--serif);font-size:13.5px;color:#959ba1;line-height:1.65}
+
+.scope-label{display:block;font-family:var(--mono);font-size:10.5px;color:var(--faint);text-transform:uppercase;letter-spacing:.11em;margin-bottom:8px}
+.scope-input{width:100%;background:#040506;border:1px solid var(--hair-2);border-radius:8px;padding:12px 14px;color:#d6dce2;font-family:var(--serif);font-size:14.5px;line-height:1.6;resize:vertical}
+.scope-input::placeholder{color:#34393e}
+.scope-input:focus{border-color:#3f9dff55;outline:none}
+.lock-btn,.continue-btn{width:100%;margin-top:18px;padding:14px;border-radius:9px;border:1px solid #3f9dff3d;background:#3f9dff0f;color:var(--accent);font-family:var(--serif);font-size:15px;cursor:pointer}
+.lock-btn:hover,.continue-btn:hover{background:#3f9dff1a}
+.continue-btn{margin-top:56px}
+
+.timeline{display:flex;flex-direction:column;border-left:1px solid var(--hair-2);margin:22px 0 8px;padding-left:0}
+.slot{display:grid;grid-template-columns:96px 1fr;gap:18px;padding:14px 0 14px 18px;border-bottom:1px solid #111316;position:relative}
+.slot:last-child{border-bottom:none}
+.slot::before{content:"";position:absolute;left:-4.5px;top:20px;width:8px;height:8px;border-radius:50%;background:var(--ground);border:1.5px solid var(--accent)}
+.slot.demo::before{border-color:var(--live)}
+.slot .time{font-family:var(--mono);font-size:11.5px;color:var(--accent);font-variant-numeric:tabular-nums;line-height:1.6}
+.slot .dur{font-family:var(--mono);font-size:10px;color:#454b51;margin-top:3px}
+.slot .what{font-family:var(--serif);font-size:15px;color:#d6dce2;line-height:1.5}
+.slot .detail{font-family:var(--serif);font-size:13.5px;color:#7f8489;margin-top:5px;line-height:1.65}
+.slot .out{font-family:var(--mono);font-size:11px;color:var(--live);margin-top:7px}
+
+.gates{display:flex;flex-direction:column;gap:8px;margin:20px 0}
+.gate{display:flex;gap:15px;padding:13px 16px;background:var(--panel);border:1px solid var(--hair);border-radius:8px}
+.gate .g{font-family:var(--mono);font-size:11px;color:var(--accent);min-width:52px;padding-top:2px}
+.gate .t{font-family:var(--serif);font-size:14px;color:#959ba1;line-height:1.65}
+
+.lanes{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin:20px 0}
+.lane{padding:14px 16px;background:var(--panel);border:1px solid var(--hair);border-radius:9px}
+.lane .n{font-family:var(--mono);font-size:12px;margin-bottom:6px}
+.lane .d{font-family:var(--serif);font-size:12.5px;color:#747b82;line-height:1.6}
+
+.stack{display:flex;flex-direction:column;gap:9px;margin:20px 0}
+.layer{padding:13px 16px;background:var(--panel);border:1px solid var(--hair);border-radius:9px;border-left:2px solid var(--accent)}
+.layer .n{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:5px}
+.layer .n span:first-child{font-family:var(--mono);font-size:11.5px;color:var(--cream)}
+.layer .n span:last-child{font-family:var(--mono);font-size:10px;color:#454b51}
+.layer .d{font-family:var(--serif);font-size:13.5px;color:#82888f;line-height:1.7}
+
+.checks{display:flex;flex-direction:column;gap:7px;margin:18px 0}
+.check{display:flex;gap:13px;padding:12px 15px;background:var(--panel);border:1px solid var(--hair);border-radius:8px;align-items:flex-start}
+.check .m{font-family:var(--mono);font-size:11px;color:var(--accent);padding-top:2px;min-width:16px}
+.check .t{font-family:var(--serif);font-size:14px;color:#959ba1;line-height:1.65}
+.check .t b{color:#d6dce2;font-weight:600}
+
+.ref-link{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:11px 15px;border:1px solid var(--hair);border-radius:8px;background:var(--panel);margin-bottom:7px;text-decoration:none}
+a.ref-link:hover{border-color:#262f38}
+.ref-link .label{font-family:var(--serif);font-size:14px;color:#aeb5bc}
+.ref-link .url{font-family:var(--mono);font-size:10.5px;color:#454b51;text-align:right;word-break:break-all}
+a.ref-link:hover .url{color:var(--accent)}
+
+.postcard{border:1px solid var(--hair-2);border-radius:10px;background:var(--panel);overflow:hidden;margin:14px 0}
+.postcard .ph{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 17px;border-bottom:1px solid var(--hair)}
+.postcard .pn{font-family:var(--mono);font-size:12.5px;color:#d6dce2}
+.postcard .pu{font-family:var(--mono);font-size:10.5px;color:#454b51;margin-top:2px}
+.postcard pre{padding:15px 17px;font-family:var(--serif);font-size:13.5px;color:#888e94;line-height:1.8;white-space:pre-wrap;margin:0}
+.open-link{font-family:var(--mono);font-size:10.5px;text-decoration:none;padding:4px 10px;border-radius:4px}
+
+@media(max-width:900px){
+  .mobile-toggle{display:block}
+  nav{position:fixed;left:0;top:0;bottom:0;z-index:150;transform:translateX(-100%);transition:transform .25s}
+  nav.open{transform:none}
+  main{padding:64px 22px 110px}
+  .section-header h1{font-size:34px}
+  h2.h2{font-size:23px}
+  .meta-grid,.lanes{grid-template-columns:1fr}
+  .slot{grid-template-columns:1fr;gap:6px}
+}
+</style>
+
+<style>
+html{color-scheme:dark}
+body{margin:0}
+img{max-width:100%}
+[hidden]{display:none!important}
+</style>
+</head><body>
+<div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+<button class="mobile-toggle" id="mobileToggle" aria-label="Toggle navigation">&#9776;</button>
+<div class="overlay" id="overlay"></div>
+
+<div class="shell">
+  <nav id="sidebar">
+    <div class="nav-header">
+      <div class="label">GrowthX &middot; Attendee manual</div>
+      <div class="title">Build Agentic<br>Workflows</div>
+      <div class="sub">Sun 6 Sep &middot; Bengaluru<br>11:00 &rarr; 17:00 &middot; laptops open</div>
+    </div>
+    <div class="nav-items" id="navItems"></div>
+    <div class="nav-footer">
+      <div class="nav-progress" id="navProgress"></div>
+      <div class="credit">Hosted by Priyank Mehta<br>SaarthiOS</div>
+    </div>
+  </nav>
+  <main id="mainContent"><div class="content" id="contentArea"></div></main>
+</div>
+
+<script>
+const SECTIONS=[
+  {id:"welcome",label:"Before you walk in",icon:"01"},
+  {id:"failures",label:"Failure library",icon:"02"},
+  {id:"ideas",label:"Idea library",icon:"03"},
+  {id:"scope",label:"Scope your build",icon:"✓"},
+  {id:"setup",label:"Setup guide",icon:"04"},
+  {id:"building",label:"The build day",icon:"05"},
+  {id:"after",label:"After the workshop",icon:"06"},
+  {id:"brag",label:"Brag about it",icon:"07"}
+];
+
+let active="welcome",completed=new Set(),sidebarOpen=false,scopeLocked=false;
+let scopeData={prediction:"",track:"",docType:"",criticalField:"",bar:"",volume:"",cutPath:""};
+let sevFilter="all",modFilter="all";
+
+const CARDS=[
+  {id:"M1",sev:"p1",mod:"eval",title:"Pick the eval before the framework",
+   tag:"The order you choose things in decides whether you can ever tell if it works.",
+   rule:"Choose how you will grade the output before you choose what will produce it.",
+   why:"A framework picked first becomes the thing you defend. An eval picked first becomes the thing you optimise against — and it will happily tell you your favourite framework lost.",
+   cost:"Weeks. Teams rebuild the parser three times and still cannot say which version was better.",
+   fix:"Today you write 04-eval before you are allowed to be proud of 03-parser. That ordering is the workshop."},
+  {id:"M2",sev:"p1",mod:"generator",title:"Truth first, chaos on purpose, with a log",
+   tag:"The rule of the day. Every module downstream depends on this ordering.",
+   rule:"Generate ground truth before you generate documents.",
+   why:"We are not labelling documents; we are manufacturing documents from labels. bot.py writes the truth line to ground_truth.jsonl <em>before</em> it fills the form, so the label can never drift from the artefact.",
+   cost:"If you invert it you are back to hand-labelling, which nobody finishes, which means no eval, which means no M1.",
+   fix:"faker_in.py → chaos.py → truth written → form filled → PDF printed. Read bot.py and watch the ordering."},
+  {id:"M3",sev:"p1",mod:"parser",title:"Extraction transcribes; validation judges",
+   tag:"Never let one model do both. This is the highest-value idea in the repo.",
+   rule:"The scariest failure is the silent correction.",
+   why:"An LLM asked to ‘extract and verify’ will quietly repair broken tax math into consistency — destroying the exact signal (data-entry errors) the pipeline exists to surface. You get a clean number and no idea anything was wrong.",
+   cost:"Undetectable. Your accuracy looks fine and your error-detection rate is silently zero.",
+   fix:"schema.py transcribes verbatim. validators.py judges, in deterministic Python. Two files, on purpose."},
+  {id:"M4",sev:"p1",mod:"eval",title:"Headline accuracy is a lie",
+   tag:"Slice by difficulty tier or you are reporting a number that means nothing.",
+   rule:"Never report the ALL column on its own. Slice first, then look.",
+   why:"‘94% accurate’ can mean 100% on clean documents and 40% on the broken 8% — and the broken 8% is often the entire reason the pipeline exists. But the point is not that the broken column is always worst; the point is that <em>until you slice you do not know where your difficulty lives.</em> In our own rehearsal it inverted: item.amount scored 59% on clean and 100% on broken, because the broken tier injects business-rule violations that do not make a document any harder to <em>read</em>. Real difficulty was in Indian 2-2-3 number formatting, which cuts across every tier. That is a better finding than the one we expected, and we only had it because the matrix exists.",
+   cost:"You ship, and production is mostly the tail you never measured — or you harden the tier you assumed was hard and never touch the one that was.",
+   fix:"eval.py emits a per-field × per-tier matrix. Tier mix per 100 is clean 60 / ok 20 / bad 12 / broken 8. Read every cell before you believe any headline."},
+  {id:"M5",sev:"p1",mod:"eval",title:"The harness is the asset; the parser is disposable",
+   tag:"What you should actually be protective of at the end of today.",
+   rule:"Models change every quarter. The harness that grades them does not.",
+   why:"Your parser will be obsolete within two model releases. The dataset, the schema, the validators and the eval survive every swap and are what let you adopt a new model in an afternoon instead of a quarter.",
+   cost:"Teams that only own a parser have to re-earn trust from scratch on every model upgrade.",
+   fix:"Keep 02-generator and 04-eval. Throw 03-parser away as often as you like."},
+  {id:"G1",sev:"p1",mod:"generator",title:"Synthetic data with no labels",
+   tag:"The #1 mistake in the wild, per the repo.",
+   rule:"Generating synthetic documents, then planning to hand-label later. Later never comes.",
+   why:"Unlabelled synthetic data is just noise you paid to create. Without labels there is no eval, and without an eval you are back to vibes.",
+   cost:"The whole dataset, retroactively worthless.",
+   fix:"Write the truth line first. It is one line of code and it is the difference between a dataset and a pile of PDFs."},
+  {id:"G2",sev:"p1",mod:"parser",title:"Document content is DATA, not instructions",
+   tag:"An invoice is an untrusted input. Treat it like one.",
+   rule:"A hostile invoice that says ‘ignore previous instructions’ is an attack surface.",
+   why:"Anything you feed a model that came from outside your trust boundary can carry instructions. Documents arrive from vendors, and vendors can be compromised.",
+   cost:"Prompt injection into a system that has write access to your ERP.",
+   fix:"Rule 5 of the shared EXTRACTION_PROMPT is the first line of defence. Never eval-then-execute parsed text — not ever, not in a demo."},
+  {id:"G3",sev:"p2",mod:"parser",title:"JSON in a text response ≠ structured output",
+   tag:"Twenty minutes of regex you do not need to spend.",
+   rule:"Use tool-calling or JSON-schema mode, not ‘please reply in JSON’.",
+   why:"Free-text JSON arrives wrapped in markdown fences, prose apologies and trailing commas. You will write a fence-stripper, and it will break on the document that matters.",
+   cost:"Twenty minutes, plus a class of silent parse failures.",
+   fix:"common.coerce_json is those twenty minutes, pre-spent. Prefer the schema mode your provider offers."},
+  {id:"G4",sev:"p2",mod:"parser",title:"OCR for documents that were never scanned",
+   tag:"Check what you have before you rasterise it.",
+   rule:"For born-digital PDFs, pdfplumber text extraction beats OCR entirely.",
+   why:"Our invoices are printed from HTML — the text layer is already perfect. Rasterising it and running vision over the image throws away certainty and adds latency and cost.",
+   cost:"Slower, more expensive, less accurate. All three at once.",
+   fix:"OCR is for scans. Test for a text layer first; fall back to vision only when there is not one."},
+  {id:"G5",sev:"p2",mod:"eval",title:"Exact-match eval fails correct answers",
+   tag:"Your parser is right and your harness says it is wrong.",
+   rule:"Normalise BOTH sides before comparing — and keep both scores.",
+   why:"Rs. 12,450.00 and 12450.0 are the same answer. An exact-match harness marks it wrong and sends you debugging a parser that works.",
+   cost:"Hours chasing a bug that lives in your scorer.",
+   fix:"Report exact AND normalised. The gap between the two numbers is your post-processing spec, written for free."},
+  {id:"G6",sev:"p2",mod:"eval",title:"Cost measured but never extrapolated",
+   tag:"The same number, at two scales, is two different decisions.",
+   rule:"₹50 for 100 documents feels free. ₹5,00,000/month is a headcount.",
+   why:"Per-document cost is meaningless until you multiply it by real volume. At 1M docs/month the cost table reorders the winners — the accurate model is often the one you cannot afford.",
+   cost:"A pilot that succeeds and a rollout that gets cancelled by finance.",
+   fix:"eval.py takes --cost-per-doc and extrapolates for you. Put your real monthly volume in."},
+  {id:"G7",sev:"p2",mod:"generator",title:"Chaos that is uniform random noise",
+   tag:"Real errors cluster. Model the clusters.",
+   rule:"A chaos engine that models realistic failure modes is worth 10x one that sprinkles random typos.",
+   why:"Actual data-entry errors concentrate: reformatted dates, transposed digits, missing IDs, case-mangled GSTINs. Uniform noise tests nothing anyone will ever hit.",
+   cost:"A dataset that is hard in all the ways production is easy.",
+   fix:"Read chaos.py. Each corruption is appended to corruptions[] so the eval can slice by exactly what was done."},
+  {id:"G8",sev:"p3",mod:"form",title:"Forms without stable id attributes",
+   tag:"Accessibility and automatability are the same property.",
+   rule:"No stable id/name attributes forces bots into brittle XPath guessing.",
+   why:"Every input in 01-form has a stable id, which is why bot.py is fifteen lines of fills instead of eighty lines of selectors that break on the next CSS change.",
+   cost:"A generator that silently stops producing data when someone reskins the form.",
+   fix:"When you point this at a real internal form, fix the ids first. It is cheaper than the selectors."},
+  {id:"G9",sev:"p3",mod:"generator",title:"Picking the automation tool by hype",
+   tag:"Pick by target, not by brand.",
+   rule:"Playwright for browsers. OpenRPA for Windows desktop apps with no API.",
+   why:"OpenRPA earns its keep when the target is a desktop application that exposes nothing. For anything running in a browser, Playwright is faster to write and far more stable.",
+   cost:"Weeks of fighting a desktop automation tool to do what a browser driver does in an afternoon.",
+   fix:"Ask what the target actually is before you choose. Our target is a browser, so the repo uses Playwright."},
+  {id:"G10",sev:"p3",mod:"eval",title:"Batch-level checks hidden in per-doc validators",
+   tag:"Deliberately left out of the repo — and it is a discussion prompt.",
+   rule:"Duplicate invoice numbers cannot be detected one document at a time.",
+   why:"Some of the most valuable checks in a real AP pipeline are batch-level: duplicates, sudden vendor changes, totals that drift across a run. A per-document validator structurally cannot see them.",
+   cost:"The duplicate-payment fraud case you were sure you had covered.",
+   fix:"Note where your validation layer needs a whole-run view, and design that as a second pass. Bring it up at demo time."},
+  {id:"G11",sev:"p2",mod:"generator",title:"Your generator decides what the model can see",
+   tag:"A rendering default silently handicapped one track for the whole workshop.",
+   rule:"The resolution you render at is a model-accuracy decision, not a cosmetic one.",
+   why:"bot.py used Chromium&rsquo;s default 1280&times;720 viewport &mdash; a landscape frame for a portrait A4 invoice. GSTIN and HSN codes came out as small, low-DPI text, which is precisely the fine print Track A&rsquo;s vision model must read. Worse, checkpoints/gen_checkpoint.py rendered at <span class='fx'>pdftoppm -r 150</span> = 1241&times;1754, so anyone who unzipped the checkpoint fed their model <strong>2.4&times; the pixels</strong> of anyone who ran the bot &mdash; while the leaderboard claimed both were graded on the same documents.",
+   cost:"A track that looks worse than it is, and a leaderboard quietly comparing two different datasets. You tune a prompt to fix a problem that lives in your renderer.",
+   fix:"Both generators now render A4 at 150 DPI and cross-reference each other in comments. Before you blame the model, check what you actually handed it &mdash; and when two code paths must produce the same dataset, make that contract explicit in both."}
+];
+
+function esc(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;")}
+function h2(t){return '<h2 class="h2">'+t+'</h2>'}
+function h3(t){return '<h3 class="h3">'+t+'</h3>'}
+function p(t){return '<p class="p">'+t+'</p>'}
+function b(t){return '<strong class="b">'+t+'</strong>'}
+function c(t){return '<code class="c">'+t+'</code>'}
+function callout(t,type){return '<div class="callout '+(type||"")+'"><p>'+t+'</p></div>'}
+function codeBlock(code,lang){return '<div class="code-block"><div class="header"><span>'+(lang||"bash")+'</span><button class="copy-code-btn" data-code="'+esc(code)+'">copy</button></div><pre><code>'+esc(code)+'</code></pre></div>'}
+function refLink(label,url){return '<a class="ref-link" href="'+url+'" target="_blank" rel="noopener noreferrer"><span class="label">'+label+'</span><span class="url">'+url.replace(/^https?:\/\//,"")+'</span></a>'}
+function table(heads,rows){return '<div class="tbl"><table><thead><tr>'+heads.map(x=>'<th>'+x+'</th>').join("")+'</tr></thead><tbody>'+rows.map(r=>'<tr>'+r.map(x=>'<td>'+x+'</td>').join("")+'</tr>').join("")+'</tbody></table></div>'}
+function checks(items){return '<div class="checks">'+items.map(x=>'<div class="check"><div class="m">&bull;</div><div class="t"><b>'+x[0]+'</b> &mdash; '+x[1]+'</div></div>').join("")+'</div>'}
+
+function isAccessible(id){
+  const order=SECTIONS.map(s=>s.id);
+  if(order.indexOf(id)<=order.indexOf("scope"))return true;
+  return scopeLocked;
+}
+
+/* ---------- 01 Welcome ---------- */
+function welcomeHTML(){
+  return h2("What this is")+
+  p("One day, one pipeline, end to end. You will "+b("manufacture")+" a messy GST-invoice dataset with known answers, "+b("parse")+" it with the stack of your choice, and "+b("grade")+" the parser against the answers you manufactured. You leave with a number you can defend, not a demo that worked once.")+
+  callout("The rule of the day: <strong>generate ground truth before you generate documents.</strong> The bot writes the truth line before it fills the form. We are not labelling documents; we are manufacturing documents from labels. Every module depends on that ordering.","tip")+
+
+  h2("Why this and not another agent demo")+
+  p("Most developers can already point an LLM at a PDF and get plausible JSON back. Almost nobody can tell you how well it works, on which kinds of document, at what cost per million, or whether it quietly fixed a number it should have reported as broken.")+
+  p("Demo AI fails inside enterprises because nobody can measure it. The gap between a notebook that works and a system anyone will sign off on is entirely made of measurement. That gap is what today closes.")+
+
+  h2("What you will build")+
+  '<div class="stack">'+
+  [["01-form","FastAPI","A data-entry webform and invoice renderer. It renders input verbatim and never validates — it stands in for every legacy ERP screen you have ever met."],
+   ["02-generator","browser agent","The data factory. A Playwright agent drives the form UI: clean record, logged corruption, truth written, form filled, PDF printed. 100 documents, tier mix 60 clean / 20 ok / 12 bad / 8 broken."],
+   ["03-parser","extraction agent","Local vision model, forced tool-calling on a paid API, or the LlamaIndex path. All three emit the same Invoice schema and the same validator flags, so the leaderboard stays honest."],
+   ["04-eval","the actual deliverable","Field-level scoring sliced by difficulty tier, exact and normalised, validator recall on the broken documents, latency, cost extrapolation, one leaderboard row."]
+  ].map(x=>'<div class="layer"><div class="n"><span>'+x[0]+'</span><span>'+x[1]+'</span></div><div class="d">'+x[2]+'</div></div>').join("")+
+  '</div>'+
+
+  h2("Pick your track before Sunday")+
+  p("All three tracks are graded by the same harness. Track A is the default and costs nothing — pick it unless you have a specific reason not to.")+
+  '<div class="lanes">'+
+  [["A · free & local","#3ddc97","Ollama + Playwright. Zero API keys, zero rupees. Vision (qwen2.5vl:7b) needs <b>16 GB, 8 GB free</b>; on 8 GB take the text path (pdfplumber + llama3.2:3b), which is faster and more accurate on born-digital PDFs anyway."],
+   ["B · paid API","#3fa9ff","Anthropic API with your own key. Fastest to a good score; costs real money per document."],
+   ["C · framework","#9d7bff","LlamaParse + LlamaIndex on the free tier. Heavier install; shows what a framework buys you and what it costs."]
+  ].map(x=>'<div class="lane"><div class="n" style="color:'+x[1]+'">'+x[0]+'</div><div class="d">'+x[2]+'</div></div>').join("")+
+  '</div>'+
+
+  h2("What this manual demands of you")+
+  checks([
+    ["Do the downloads at home","Chromium is ~150 MB and the vision model is ~6 GB. Venue wifi is where model pulls go to die. This is the single most common reason people spend the morning watching a progress bar."],
+    ["Pick your document before Sunday","Section 03 is the idea library: nine document types, of which the GST invoice is the pre-built reference. Your team lives with one of them all day. Deciding at home is ten minutes you get back in the room."],
+    ["Come with a real document in mind","The invoice is the teaching case. The value is the harness, and the harness is worth more when you already know which document type you would point it at on Monday."],
+    ["Read the broken column first","Every time you look at a score today, read the hardest tier before the average. That habit is most of the lesson."],
+    ["Never stay blocked past fifteen minutes","checkpoints/ has a pre-baked dataset and reference outputs. Using it costs you nothing — the workshop is about the pipeline, not the yak-shave."]
+  ])+
+
+  h2("The five learnings, in one line each")+
+  table(["#","The learning"],[
+    ["M1","Pick the eval before the framework."],
+    ["M2","Truth first, chaos on purpose, with a log."],
+    ["M3","Extraction transcribes; validation judges — the scariest failure is the silent correction."],
+    ["M4","Headline accuracy is a lie; slice by tier, normalise both sides."],
+    ["M5","The harness is the asset; the parser is disposable."]
+  ])+
+  p("The next section unpacks all five, plus the ten specific mistakes that cost people the most time. Read it before Sunday and you will recognise them happening to you in the room.");
+}
+
+/* ---------- 02 Failure library ---------- */
+function failuresHTML(){
+  const sevs=[["all","Everything"],["p1","P1 · will bite you today"],["p2","P2 · costs you hours"],["p3","P3 · worth knowing"]];
+  const mods=[["all","All modules"],["form","01-form"],["generator","02-generator"],["parser","03-parser"],["eval","04-eval"]];
+  let html=h2("Sixteen ways this goes wrong")+
+  p("Five core learnings and eleven field-tested gotchas, lifted from the repo READMEs and the slides. Filter by severity or by module. Expand any card for the rule, why it bites, what it costs, and the fix that is already in the code.")+
+  '<div class="filter-bar">'+sevs.map(s=>{
+    let cl="filter-btn sev-filter";
+    if(sevFilter===s[0])cl+=s[0]==="p1"?" active-p1":s[0]==="p3"?" active-p3":" active";
+    return '<button class="'+cl+'" data-val="'+s[0]+'">'+s[1]+'</button>';
+  }).join("")+'</div>'+
+  '<div class="cat-bar">'+mods.map(m=>'<button class="cat-btn mod-filter'+(modFilter===m[0]?" active":"")+'" data-val="'+m[0]+'">'+m[1]+'</button>').join("")+'</div>';
+  const shown=CARDS.filter(x=>(sevFilter==="all"||x.sev===sevFilter)&&(modFilter==="all"||x.mod===modFilter));
+  html+='<div style="font-family:var(--mono);font-size:11px;color:var(--faint);margin-bottom:14px">'+shown.length+' of '+CARDS.length+' shown</div>';
+  html+=shown.map(cardHTML).join("");
+  if(!shown.length)html+=p("Nothing matches that combination. Widen a filter.");
+  return html;
+}
+
+function cardHTML(x){
+  const sevLabel={p1:"P1",p2:"P2",p3:"P3"}[x.sev];
+  return '<div class="pcard">'+
+    '<button class="card-toggle pcard-toggle"><div class="card-top">'+
+      '<div><div class="card-id">'+x.id+'</div><div class="card-title">'+x.title+'</div><div class="card-tagline">'+x.tag+'</div></div>'+
+      '<div class="card-badges"><span class="badge badge-'+x.sev+'">'+sevLabel+'</span><span class="badge badge-stage">'+x.mod+'</span><span class="arrow">&darr;</span></div>'+
+    '</div></button>'+
+    '<div class="card-body">'+
+      '<div class="qbox">'+x.rule+'</div>'+
+      '<div class="meta-grid"><div><div class="k">Why it bites</div><div class="v">'+x.why+'</div></div>'+
+      '<div><div class="k">What it costs</div><div class="v">'+x.cost+'</div></div></div>'+
+      '<div class="winbox"><div class="k">The fix, already in the repo</div><div class="v">'+x.fix+'</div></div>'+
+    '</div></div>';
+}
+
+/* ---------- 03 Idea library ---------- */
+const IDEAS=[
+  {n:"01",title:"GST invoice",tag:"GSTIN checksum + tax math",effort:"pre-built · done",ref:true,
+   fields:"vendor, gstin, invoice_no, date, items (description, hsn, qty, rate, amount), cgst, sgst, total",
+   format:"GSTIN passes the state-code + checksum test; date must be parseable at all (ambiguous day/month is transcribed, not fixed).",
+   math:"Per line, qty × rate = amount. cgst = sgst for an intra-state supply. total = subtotal + cgst + sgst, tolerance ₹0.05.",
+   chaos:"Already wired and already in the checkpoint dataset: <span class=\"fx\">total_digit_swap</span>, <span class=\"fx\">cgst_wrong_math</span>, <span class=\"fx\">gstin_missing</span>.",
+   note:"Everything in this manual runs on this card unmodified — form, bot, chaos engine, checkpoint dataset, reference outputs. Pick it if you want zero template work and your whole day on parsing and eval."},
+
+  {n:"02",title:"Salary payslip",tag:"gross − deductions = net, PF on basic",effort:"effort: S/M",
+   fields:"employer, employee, emp_code, pan, month, earnings (basic, hra, other_allowance), deductions (pf, professional_tax, tds), gross, total_deductions, net_pay",
+   format:"PAN matches <span class=\"fx\">AAAAA9999A</span>; emp_code pattern is yours to choose — state it in your spec.",
+   math:"gross = Σ earnings; total_deductions = Σ deductions; net_pay = gross − total_deductions; pf = 12% of basic, tolerance ₹1.",
+   chaos:"Net that quietly ignores one deduction; PF computed on gross instead of basic; PAN with a digit in a letter slot; transposed digits in net_pay; professional tax from the wrong state slab."},
+
+  {n:"03",title:"Retail / restaurant receipt",tag:"service charge % + round-off",effort:"effort: S",
+   fields:"merchant, gstin, receipt_no, date, items (name, qty, price, amount), service_charge, cgst, sgst, round_off, total, upi_ref",
+   format:"GSTIN checksum; UPI reference is exactly 12 digits.",
+   math:"service_charge = the stated % of item subtotal; total = subtotal + service charge + taxes + round_off; |round_off| &lt; 1.",
+   chaos:"round_off applied but the total not actually rounded; service-charge % printed ≠ % applied; UPI ref of 11 digits; item price and amount swapped."},
+
+  {n:"04",title:"E-way bill",tag:"distance → validity-date rule",effort:"effort: M",
+   fields:"ewb_no, generated_date, valid_until_date, consignor_gstin, consignee_gstin, vehicle_no, distance_km, doc_value",
+   format:"EWB number is 12 digits; vehicle matches <span class=\"fx\">AA00AA0000</span> (KA01AB1234); both GSTINs pass checksum.",
+   math:"validity days = ceil(distance_km / 200); valid_until_date = generated_date + validity days.",
+   chaos:"Validity date off by one day; vehicle number with a letter/digit swap; consignor GSTIN identical to consignee GSTIN; distance of 0 km."},
+
+  {n:"05",title:"Bank cheque",tag:"amount in words vs figures",effort:"effort: M",
+   fields:"payee, date, amount_figures, amount_words, account_no, ifsc, micr, cheque_no",
+   format:"IFSC = <span class=\"fx\">AAAA0</span> + 6 alphanumerics; MICR is 9 digits; cheque_no is 6 digits.",
+   math:"amount_words must equal amount_figures — you write the number-to-Indian-words converter. That cross-check is the entire reason to pick this card.",
+   chaos:"Words say lakh, figures say thousand; stale date more than three months old; missing payee; figures with transposed digits.",
+   note:"Hardest extraction in the library. Handwriting-style fonts are optional; the words-vs-figures validation is not."},
+
+  {n:"06",title:"Fixed deposit receipt",tag:"compound-interest maturity math",effort:"effort: S/M",
+   fields:"bank, depositor, pan, fd_no, principal, rate_pct, open_date, maturity_date, tenure_months, maturity_amount",
+   format:"PAN matches <span class=\"fx\">AAAAA9999A</span>.",
+   math:"maturity_amount = principal × (1 + rate/400)^(4 × tenure_months/12), tolerance ₹1; maturity_date = open_date + tenure.",
+   chaos:"Maturity computed with simple interest instead of compound; tenure printed as 12 while the dates say 15 months; PAN with a digit in a letter slot."},
+
+  {n:"07",title:"Purchase order",tag:"delivery date ≥ order date",effort:"effort: S",
+   fields:"buyer, supplier_gstin, po_no, order_date, delivery_date, items (description, qty, rate, amount), subtotal, total",
+   format:"GSTIN checksum; PO-number pattern is yours to choose — state it in your spec.",
+   math:"delivery_date ≥ order_date; subtotal = Σ items; per line, qty × rate = amount.",
+   chaos:"Delivery before order; duplicate PO numbers across the batch; qty of 0 against a non-zero amount."},
+
+  {n:"08",title:"Electricity bill",tag:"slab-split arithmetic",effort:"effort: M",
+   fields:"consumer_no, billing_month, units, slab_lines (slab, units, rate, amount), fixed_charge, arrears, bill_date, due_date, total",
+   format:"consumer_no is 10 digits.",
+   math:"Each slab amount = units × that slab rate, with the units split correctly across slabs; due_date = bill_date + 15 days; total = slabs + fixed_charge + arrears.",
+   chaos:"Units split across slabs wrongly; due date equal to bill date; arrears added twice; total off by exactly the fixed charge."},
+
+  {n:"09",title:"Student marksheet",tag:"totals, percentage, grade band",effort:"effort: S",
+   fields:"student, roll_no, exam, subjects (name, max_marks, obtained), total_max, total_obtained, percentage, grade",
+   format:"roll_no pattern is yours to choose; obtained ≤ max_marks on every subject line.",
+   math:"Totals are sums; percentage = total_obtained / total_max × 100 to 2 dp; grade consistent with the band table you state in your spec.",
+   chaos:"Percentage computed from the wrong total; obtained greater than max; grade one band off; a subject line printed in a regional script."}
+];
+
+function ideaCardHTML(x){
+  return '<div class="pcard">'+
+    '<button class="card-toggle pcard-toggle"><div class="card-top">'+
+      '<div><div class="card-id">'+x.n+'</div><div class="card-title">'+x.title+'</div><div class="card-tagline">'+x.tag+'</div></div>'+
+      '<div class="card-badges"><span class="badge '+(x.ref?"badge-p1":"badge-stage")+'">'+x.effort+'</span><span class="arrow">&darr;</span></div>'+
+    '</div></button>'+
+    '<div class="card-body">'+
+      '<div style="font-family:var(--mono);font-size:9.5px;color:#454b51;text-transform:uppercase;letter-spacing:.11em;margin-bottom:7px">Fields</div>'+
+      '<div class="qbox">'+x.fields+'</div>'+
+      '<div class="meta-grid"><div><div class="k">Format rules · validators.py</div><div class="v">'+x.format+'</div></div>'+
+      '<div><div class="k">Math / cross-field rules · validators.py</div><div class="v">'+x.math+'</div></div></div>'+
+      '<div class="winbox"><div class="k">Chaos ideas · chaos.py</div><div class="v">'+x.chaos+'</div></div>'+
+      (x.note?'<p class="p" style="font-size:13.5px;margin-top:14px;margin-bottom:0">'+x.note+'</p>':'')+
+    '</div></div>';
+}
+
+function ideasHTML(){
+  return h2("Pick one document and live with it all day")+
+  p("Your team picks "+b("one")+" document type and stays with it from the first commit to the 3 PM leaderboard: you generate it, corrupt it, parse it, and grade it. The pipeline architecture never changes — only three files do. Nine cards, one of them already built.")+
+  callout("The "+b("GST invoice is the pre-built reference")+". Form, bot, chaos engine, checkpoint dataset and reference outputs all run on it unmodified. Pick it if you want zero template work and your entire day on parsing and eval — that is the right default, not a lesser choice.","tip")+
+
+  h3("The nine cards at a glance")+
+  table(["#","Document","Signature validation","Effort"],
+    IDEAS.map(x=>[x.n,(x.ref?b(x.title):x.title),x.tag,x.effort.replace("effort: ","").replace("pre-built · done","done")]))+
+  p("Effort is honest: "+b("S")+" is a small tweak of the invoice code, "+b("M")+" is real template and rules work. Anything other than card 01 means building your own template, generator and validators — budget the M2 block for it.")+
+
+  h3("Open a card for its spec")+
+  p("Fields, format rules, math rules and chaos ideas — everything your generator, your validators and your "+c("--catchable")+" list are built from.")+
+  IDEAS.map(ideaCardHTML).join("")+
+
+  h2("If you pick a non-invoice card")+
+  p("Copy "+c("00-idea-library/SPEC_TEMPLATE.md")+", fill it in ten minutes, and pin it next to your keyboard. Then swap exactly three things and nothing else.")+
+  table(["Swap this","Keep this untouched"],[
+    ["Document template — "+c("01-form/templates"),"The bot flow and the form server"],
+    ["faker + chaos rules for your fields — "+c("02-generator"),"Truth-first ordering and the tier structure"],
+    ["Schema fields + validator rules — "+c("03-parser"),c("common.py")+" and all of "+c("04-eval")]
+  ])+
+  checks([
+    ["Name every date field with 'date' in the key","<code class=\"c\">date</code>, <code class=\"c\">due_date</code>, <code class=\"c\">order_date</code>. The eval harness normalises date fields by name — break the convention and you lose normalised scoring on your hardest fields."],
+    ["Pass your own catchable tags to the eval","The harness derives its field list from your ground truth and outputs, so it grades any document unchanged. Only the broken-tier tags are yours to declare."],
+    ["Fill the spec before you write code","Your generator, validators and catchable list all come from it. Ten minutes on paper saves the argument at 2 PM about what the document is supposed to say."],
+    ["Do not edit the eval to fit your document","If you feel the urge, your field naming broke the convention. Fix the spec, not the harness — that the harness never changes while the document does is the architecture lesson of the day."]
+  ])+
+  codeBlock('python eval.py --outputs ../03-parser/outputs_track_a.jsonl \\\n               --truth   ../02-generator/dataset/ground_truth.jsonl \\\n               --catchable "net_pay_mismatch,pan_malformed,pf_on_gross"')+
+  callout("If your spec and your code disagree, your eval is grading a document that does not exist. That failure is silent, it scores well, and it is worth nothing.","warning")+
+  p("Bring your pick decided. Ten minutes of choosing at home is ten minutes of building in the room.");
+}
+
+/* ---------- 04 Scope ---------- */
+function scopeHTML(){
+  let html=h2("Your build plan")+
+  p("Six answers. They decide what you do in the room and, more usefully, what you do with the harness afterwards. Fill them in now — the rest of the manual unlocks once you commit.")+
+  field("prediction","What did the model finder predict? (00-model-finder/index.html)","input","Model, cost/doc, cost at your volume, and does it fit your machine. This is a hypothesis, not a decision — 04-eval gets to overrule it at 15:00.")+
+  field("track","Which track are you running?","input","A (free, local Ollama) · B (paid API) · C (framework). If the finder recommended something this repo has no code path for, note both — the gap is worth a sentence at demo day.")+
+  field("docType","Which document would you point this at back at work?","textarea","Vendor invoices · purchase orders · KYC forms · insurance claims · lab reports · whatever is currently being retyped by a human")+
+  field("criticalField","Which single field must never be wrong?","input","The one that costs money or breaks a downstream system when it is silently mistranscribed")+
+  field("bar","What accuracy would make this shippable, and who decides?","textarea","A number and a person. 'Finance signs off at 99% on total and GSTIN, and will accept 90% elsewhere' beats 'as accurate as possible'.")+
+  field("volume","Real monthly volume, for the cost extrapolation","input","Documents per month, honestly. 800 and 800,000 are different products.")+
+  field("cutPath","If you are behind by 15:00, what do you cut?","textarea","Cut document count before tracks. Cut tracks before fields. Never cut the eval — an ungraded parser is the one thing worth nothing.")+
+  '<div style="margin-top:26px"><div class="scope-label">Your one-liner</div><div class="qbox" id="scopePreview" style="min-height:64px"></div></div>';
+  if(!scopeLocked){
+    html+='<button class="lock-btn" id="lockBtn">Lock it in &rarr; open the setup guide</button>';
+  }else{
+    html+=callout("Scope locked. Every section is open. You can still edit these answers — the plan is yours, not ours.","tip")+
+    '<button class="continue-btn" id="continueBtn" style="margin-top:18px">Done. Continue to Setup guide &rarr;</button>';
+  }
+  return html;
+}
+
+function field(key,label,type,ph){
+  const v=esc(scopeData[key]||"");
+  const el=type==="textarea"
+    ? '<textarea class="scope-input scope-field" data-key="'+key+'" rows="2" placeholder="'+esc(ph)+'">'+v+'</textarea>'
+    : '<input class="scope-input scope-field" data-key="'+key+'" value="'+v+'" placeholder="'+esc(ph)+'">';
+  return '<div style="margin-bottom:20px"><label class="scope-label">'+label+'</label>'+el+'</div>';
+}
+
+function updateScopePreview(){
+  const el=document.getElementById("scopePreview");
+  if(!el)return;
+  const d=scopeData, any=Object.values(d).some(v=>v&&v.trim());
+  if(!any){el.innerHTML='<span style="color:#3e3439">Fill the fields above and your plan appears here.</span>';return;}
+  el.innerHTML="The finder predicts "+em(d.prediction,"[model, cost/doc, fits?]")+", and the eval gets to overrule it at 15:00. "+
+    "I am running "+em(d.track,"track [A/B/C]")+" against "+em(d.docType,"[document type]")+
+    ", where "+em(d.criticalField,"[the field that must never be wrong]")+" is the field that must never be wrong. "+
+    "It ships when "+em(d.bar,"[accuracy bar and who signs off]")+", at "+em(d.volume,"[volume]")+" a month. "+
+    "If I am behind by 15:00 I cut "+em(d.cutPath,"[cut path]")+".";
+}
+function em(v,ph){return v&&v.trim()?'<span style="color:var(--accent-lt)">'+esc(v.trim())+'</span>':'<span style="color:#3e3439">'+ph+'</span>'}
+
+/* ---------- 05 Setup ---------- */
+function setupHTML(){
+  return callout("Run every command on this page <strong>at home, on real wifi, before Sunday.</strong> Chromium is ~150 MB and the Track A vision model is ~6 GB. The single most common way to lose the morning is to arrive and start downloading.","warning")+
+
+  h2("What you need on the machine")+
+  table(["Thing","Why","Notes"],[
+    ["Python 3.11+ and git","Everything","<span class='fx'>python3 --version</span> to check"],
+    ["The model finder, opened once","Step 1 at 11:15","<span class='fx'>00-model-finder/index.html</span> caches its catalog for <b>24 hours</b>. Open it <b>Saturday evening</b> &mdash; cold and offline it shows an empty page, and Friday is already too early"],
+    ["16 GB RAM, 8 GB of it free","Track A's 7B vision model","<b>Measured, not guessed:</b> on an 8 GB M2 the 7b cannot fit the ~4.8 GiB Metal budget at all, and even a 3b runs at 0.3 tok/s &mdash; about 30 minutes per document. 8 GB laptops should take the text path below, or Track B"],
+    ["Ollama","Track A only","<span class='fx'>brew install ollama</span> on macOS"],
+    ["A laptop charger","Six hours","The room has power. Bring the brick anyway"],
+    ["Anthropic API key","Track B, and Track C's extraction step","console.anthropic.com &rarr; API Keys"],
+    ["LlamaCloud key","Track C only","cloud.llamaindex.ai — free tier is enough"]
+  ])+
+
+  h2("Install, once")+
+  codeBlock("git clone <repo-url> && cd agentic-invoice-pipeline\n./setup.sh                      # venv + deps + playwright chromium + .env from template\n\n# 16 GB+ laptop -- the vision path:\nollama pull qwen2.5vl:7b        # ~6 GB, about 30 min at 3.5 MB/s. AT HOME.\n\n# 8 GB laptop -- the text path (faster AND more accurate on born-digital PDFs):\nollama pull llama3.2:3b         # ~2 GB, about 10 min\n#   then run:  python track_a_local.py --text-fallback")+callout("<strong>8 GB laptop? Take the text path and do not feel bad about it.</strong> Our invoices are printed from HTML, so the PDF text layer is already perfect &mdash; pdfplumber beats vision outright (gotcha G4). Measured on an 8 GB M2: vision ~30 min/document, text <strong>8 seconds</strong>/document with zero parse errors. The vision path is the interesting one to <em>discuss</em>; it is not the one to be blocked by.","tip")+callout("<strong>Track C only:</strong> the llama-index lines in <span class='fx'>requirements.txt</span> are commented out on purpose &mdash; the install is heavy. If C is your track, uncomment them and run <span class='fx'>pip install -r requirements.txt</span> again <em>at home</em>. Doing it on venue wifi is the other way people lose the morning.","warning")+
+  p("No "+c(".env")+" editing is needed for Track A — it requires zero keys. "+c("setup.sh")+" copies "+c(".env.example")+" to "+c(".env")+" for you; every key is documented inline, per track.")+
+
+  h2("Smoke-test the whole pipeline before Sunday")+
+  p("Four terminals' worth of commands, about ten minutes. If all four work at home, you start the day building instead of debugging.")+
+  h3("1 · form server (terminal 1)")+
+  codeBlock("source .venv/bin/activate\ncd 01-form && uvicorn app:app --port 8000\n# open http://localhost:8000 — this is the form the bot will fill")+
+  h3("2 · manufacture the dataset (terminal 2)")+
+  codeBlock("source .venv/bin/activate\ncd 02-generator && python bot.py --n 100 --seed 42")+
+  p("Watch truth-first happen: each ground-truth line lands in "+c("dataset/ground_truth.jsonl")+" "+b("before")+" its PDF exists. Expect 100 PDFs, 100 PNGs, and a tier mix of 60 clean / 20 ok / 12 bad / 8 broken.")+
+  h3("3 · parse five documents")+
+  codeBlock("ollama serve &\ncd 03-parser\npython track_a_local.py --dataset ../02-generator/dataset --limit 5")+
+  callout("Always smoke-test with <span style='font-family:var(--mono)'>--limit 5</span> before running 100. On Track B that is the difference between about <strong>&#8377;4</strong> and <strong>&#8377;75</strong> &mdash; at Sonnet 5's published rates a one-page invoice runs ~&#8377;0.75, so today's hundred is ~&#8377;75 and a million a month is ~&#8377;7.5 lakh. That is an <em>estimate</em>: the track never records token usage, so the repo cannot tell you what a document really cost &mdash; which is gotcha G6 happening in our own code.","tip")+
+  h3("4 · grade it")+
+  codeBlock("cd ../04-eval\npython eval.py --outputs ../03-parser/outputs_track_a.jsonl \\\n               --truth   ../02-generator/dataset/ground_truth.jsonl --cost-per-doc 0")+
+  p("Open "+c("eval_report.md")+". Per-field × per-tier matrix, exact and normalised, validator recall on the chaos-broken documents, p50 latency, and a one-line leaderboard row.")+
+
+  h2("If something breaks")+
+  table(["Symptom","Fix"],[
+    ["Playwright or Chromium will not install","<span class='fx'>unzip checkpoints/dataset-100.zip -d checkpoints/</span> — identical seed-42 dataset, no browser needed"],
+    ["No browser at all, want to regenerate","<span class='fx'>pip install weasyprint && python checkpoints/gen_checkpoint.py --n 100 --seed 42</span>"],
+    ["Laptop too weak for the vision model","<span class='fx'>ollama pull llama3.2:3b</span> then run track_a_local.py with <span class='fx'>--text-fallback</span>. (Not llama3.1:8b &mdash; at 4.9 GB it does not fit the machines this fallback exists to rescue.)"],
+    ["Score looks wrong and you cannot tell why","Diff your output against <span class='fx'>checkpoints/reference_outputs.jsonl</span> — that is what a perfect parser emits"],
+    ["Track C install is enormous","Uncomment the llama-index lines in requirements.txt only if C is your track. Otherwise leave them commented"],
+    ["Parser returns markdown-fenced JSON","Use structured output / tool-calling mode. <span class='fx'>common.coerce_json</span> is the fallback"]
+  ])+
+
+  h2("Reference")+
+  refLink("Event page — Build Agentic Workflows","https://growthx.club/events/build-enterprise-ai-agents-with-openrpa-llamaindex-f50ca1")+
+  refLink("Ollama — install and models","https://ollama.com")+
+  refLink("LlamaCloud — free LlamaParse key (Track C)","https://cloud.llamaindex.ai")+
+  refLink("Anthropic Console — API key (Track B)","https://console.anthropic.com");
+}
+
+/* ---------- 06 The build day ---------- */
+function buildingHTML(){
+  const slots=[
+    ["11:00","30 min","The open enterprise AI stack &mdash; then price your own","<b>First 15:</b> why demo AI dies inside companies, the six layers of the stack, and why open-vs-paid is decided per layer rather than per company. The real trade-off is a triangle: cost, control, time-to-ship. <b>Second 15:</b> stop discussing the triangle and measure yours &mdash; open <span class='fx'>00-model-finder/index.html</span> and answer five questions about your document, your machine and your real monthly volume. Twelve minutes, hard stop.","A written prediction: model, cost/doc, cost at volume, fits-my-machine"],
+    ["11:30","45 min","Getting started","venv, setup.sh, the starter template running on your machine. Anyone still downloading goes straight to checkpoints/ and catches up later.","Everyone's pipeline runs"],
+    ["12:15","60 min","Build the data factory","01-form and 02-generator. faker makes a clean record, chaos.py corrupts it on purpose and logs what it did, the truth line is written, then the bot fills the form and prints the PDF. 100 documents with known answers.","dataset/ + ground_truth.jsonl"],
+    ["13:15","45 min","Lunch + mentor support","Setup edge cases, laptop-specific failures, and the questions you did not want to ask in front of the room. The 100-document batch can run while you eat.","Everyone unblocked"],
+    ["14:00","60 min","Build your extraction agent","03-parser. One schema, three tracks, the same shared extraction prompt. Smoke-test at --limit 5, then run the batch. Extraction transcribes; it does not judge.","outputs_track_*.jsonl"],
+    ["15:00","45 min","Grade it, then read it properly","04-eval. Field-level scores sliced by tier, exact and normalised, validator recall on the broken 8%, latency and cost extrapolation. The leaderboard goes up at 15:45 — one row per person, same harness, no excuses.","eval_report.md + your row"],
+    ["15:45","45 min","Test and improve","Now that you can measure, changes stop being guesses. Tighten the prompt, add a validator, fix a normalisation gap — and watch the tier columns move.","A second, better score"],
+    ["16:30","30 min","Demo day","Show the pipeline end to end: a document goes in, a number comes out, and you can click from the number to the raw answer behind it. Then the honest part — which tier you are still losing on.","A complete pipeline, measured"]
+  ];
+  let html=h2("Run of show")+
+  p("Six hours, and roughly four of them are hands-on-keyboard. The framing is front-loaded because the ordering matters: you cannot pick a parser sensibly until you know how it will be graded.")+
+  '<div class="timeline">'+slots.map((s,i)=>
+    '<div class="slot'+(i>=slots.length-1?" demo":"")+'"><div><div class="time">'+s[0]+'</div><div class="dur">'+s[1]+'</div></div>'+
+    '<div><div class="what">'+s[2]+'</div><div class="detail">'+s[3]+'</div><div class="out">&rarr; '+s[4]+'</div></div></div>'
+  ).join("")+'</div>'+
+  callout("The leaderboard at 15:45 is the point of the day. Every row is produced by the same eval against the same ground truth, so the comparison is real — and it is the first time most people have seen their parser next to someone else's on honest terms.","tip")+
+
+  h2("Gates — where you should be, and when")+
+  '<div class="gates">'+
+  [["11:15","Four numbers written down: model, cost per document, cost at your real monthly volume, and whether it fits your machine. That last one decides Track A vs B <em>before</em> you download 6 GB."],
+   ["11:30","Your environment runs and the form server starts. If it does not, stop debugging and unzip the checkpoint — you can fix your install over lunch."],
+   ["13:15","100 documents on disk with a ground_truth.jsonl beside them. Check the invariant <em>per document</em> &mdash; every truth line has a PDF beside it. Do not check with <span class='fx'>ls -lt</span>: the truth file is appended all run, so its mtime is NEWER than 99 of the 100 PDFs even though every line was written before its own document."],
+   ["15:00","Five documents parsed end to end and a JSONL you can open. Five is enough; the batch can finish while you start the eval."],
+   ["15:45","A number on the leaderboard. Any number. A bad score you can explain beats a good score you cannot."],
+   ["16:30","A second run that moved at least one tier column, and a sentence about why it moved."]
+  ].map(x=>'<div class="gate"><div class="g">'+x[0]+'</div><div class="t">'+x[1]+'</div></div>').join("")+
+  '</div>'+
+
+  h2("Read your eval report in this order")+
+  checks([
+    ["The broken column, first","Eight documents out of a hundred, and the entire reason the pipeline exists. Start here every time."],
+    ["Validator recall, then precision","Of the corruptions chaos.py logged, how many did your validators flag? A parser that transcribes perfectly and flags nothing has failed at the job. <b>Then read precision on the next line.</b> Recall alone is trivially gamed &mdash; a parser that transcribes badly flags nearly everything and scores 100% recall at 16% precision. Both numbers or neither. (Recall only means anything at n&ge;100: on a 10-doc smoke run it can legitimately read 0/0.)"],
+    ["Exact versus normalised, and headline versus parsed-only","Two gaps, two different specs. Exact-vs-normalised is your post-processing spec, handed to you free. Headline-vs-parsed-only tells you <em>which kind</em> of problem you have: if parsed-only sits far above the headline, you have a stability problem, not an extraction problem, and the fix is a different fix."],
+    ["Per-field, not overall","One catastrophic field hidden behind seven good ones is the normal case, not the exception."],
+    ["Cost at your real volume","Multiply by the number you wrote in your scope. The winner at 100 documents is often not the winner at a million."]
+  ])+
+
+  h2("Know your validator ceiling before you parse anything")+
+  p("Two seconds, no model, and it tells you the most an ideal parser could ever be credited with catching. Run "+c("validators.validate()")+" over the ground truth itself:")+
+  codeBlock("cd 03-parser\npython - <<'PY'\nimport json, collections\nfrom schema import Invoice\nfrom validators import validate\nrows = [json.loads(l) for l in open('../02-generator/dataset/ground_truth.jsonl')]\nby = collections.defaultdict(collections.Counter)\nfor r in rows:\n    d = {k: r[k] for k in ('vendor','gstin','invoice_no','date','items','cgst','sgst','total')}\n    flags = validate(Invoice.model_validate(d))\n    by[r['tier']]['docs'] += 1\n    if flags: by[r['tier']]['flagged'] += 1\nfor t in ['clean','ok','bad','broken']: print(t, dict(by[t]))\nPY")+
+  table(["Tier","Docs","Flagged","What this tells you"],[
+    ["clean","60","<b>0</b>","Your clean data passes its own validators. If this is not zero, stop &mdash; your eval is meaningless before you start"],
+    ["ok","20","13","Cosmetic damage that is normalisable but worth flagging (lowercased GSTIN)"],
+    ["bad","12","8","Four of the twelve are vendor truncation &mdash; real damage that <em>no</em> business rule can detect"],
+    ["broken","8","<b>2</b>","Only two of eight are catchable per-document. Five are duplicate invoice numbers, which a per-document validator structurally cannot see"]
+  ])+
+  callout("That last row is gotcha <strong>G10</strong>, made concrete rather than theoretical: <strong>six of the eight &lsquo;broken&rsquo; documents are undetectable by design.</strong> Your validator recall has a hard ceiling and this is where it is. Bring this table to demo day and say what a second, batch-level pass would need to look like.","tip")+
+
+  h2("The trust check, if a score looks impossible")+
+  p("A perfect verbatim parser must score 100% on this harness. If your number looks wrong, check the harness before you rewrite the parser — and the repo ships the means to do exactly that.")+
+  codeBlock("cd 04-eval\npython eval.py --outputs /tmp/perfect.jsonl \\\n               --truth ../checkpoints/dataset/ground_truth.jsonl\n# expected: 100.0%, validator recall 10/10, false flags 0")+
+  p("The full snippet that builds "+c("/tmp/perfect.jsonl")+" from "+c("checkpoints/reference_outputs.jsonl")+" is in the root README, step 6. It takes thirty seconds and it has saved people an hour of debugging a parser that was fine.")+
+
+  h2("If you are behind at 15:00")+
+  p("Cut in this order, and cut early rather than heroically. "+b("Document count")+" first — fifty graded documents beat a hundred ungraded ones. Then "+b("extra tracks")+" — one track, fully measured, is the deliverable; three half-run tracks are not. Then "+b("fields")+" — score four fields honestly rather than eight badly. "+b("Never cut the eval.")+" A parser with no number attached to it is the one artefact from today that is worth nothing on Monday.");
+  return html;
+}
+
+/* ---------- 07 After ---------- */
+function afterHTML(){
+  return h2("What you have, and what it is not yet")+
+  p("You left with a measured pipeline on a synthetic dataset you manufactured. That is a genuinely uncommon thing to own. It is also not yet a production system, and the honest version of the next few weeks is mostly about the parts that were free today because the data was fake.")+
+
+  h3("Week one — point it at something real")+
+  checks([
+    ["Swap the domain, keep the harness","Change the schema and the validators to your document type. 02-generator and 04-eval survive almost untouched — that is M5 arriving in practice."],
+    ["Get fifty real documents labelled","Real documents fail in ways your chaos engine did not imagine. Fifty hand-labelled real ones, added to the synthetic set, is the highest-value work of the month."],
+    ["Re-run the cost extrapolation","With your real monthly volume and your real per-document cost. Do this before anyone promises a rollout date."]
+  ])+
+
+  h3("Month one — the parts today skipped")+
+  checks([
+    ["Batch-level validation","Duplicate invoice numbers, vendor drift, run-level totals. Per-document validators structurally cannot see these — G10 was left in the repo on purpose."],
+    ["Human-in-the-loop on the tail","Production is mostly the broken 8%. Route low-confidence documents to a person and measure how often they disagree with the parser."],
+    ["Retries and an audit trail","Every extraction stored with model name, prompt version, timestamp and the raw response. Without it you cannot explain a number to anyone six weeks later."],
+    ["Treat documents as hostile","Untrusted input from outside the trust boundary, and never eval-then-execute anything a document told you. G2 is not theoretical once the pipeline has write access."]
+  ])+
+
+  h3("Quarter one — the thing that compounds")+
+  p("Re-run the same harness against every new model release. Because the dataset, the schema and the eval never changed, adopting a better model becomes an afternoon of work and a defensible number, rather than a quarter of re-earning trust. That is the whole argument for owning the harness.")+
+
+  h2("Keep")+
+  table(["Artefact","Why it survives"],[
+    ["00-model-finder/","Re-run it every time a model ships. The question it answers &mdash; what fits, at what cost, at your volume &mdash; does not go stale; the answer does"],
+    ["02-generator/","Your data factory. Retarget it, do not rebuild it"],
+    ["04-eval/","The harness. The most valuable folder in the repo"],
+    ["schema.py + validators.py","Your contract and your judgement, in deterministic code"],
+    ["checkpoints/","A frozen dataset means today's score is still comparable next year"],
+    ["03-parser/","Disposable, and that is the point. Expect to replace it twice a year"]
+  ])+
+
+  h2("Reference")+
+  refLink("Event page — Build Agentic Workflows","https://growthx.club/events/build-enterprise-ai-agents-with-openrpa-llamaindex-f50ca1")+
+  refLink("Ollama","https://ollama.com")+
+  refLink("LlamaCloud (Track C)","https://cloud.llamaindex.ai")+
+  refLink("Anthropic Console (Track B)","https://console.anthropic.com");
+}
+
+/* ---------- 08 Brag ---------- */
+function bragHTML(){
+  const posts=[
+    {n:"LinkedIn",col:"#0a66c2",icon:"in",u:"https://www.linkedin.com/school/growthxclub/posts/?feedView=all",h:"GrowthX Club",
+     t:"Spent Sunday building a document-extraction pipeline I can actually measure.\n\nWhat it does: manufactures 100 GST invoices with known answers, corrupts a controlled 40% of them on purpose, parses them, then grades the parser field by field against the truth it started from.\n\nThe number that mattered: [X]% overall — and [Y]% on the deliberately broken documents. Those two numbers being far apart is the entire lesson. Headline accuracy hides the only cases the system exists to catch.\n\nThe thing I did not expect: an LLM asked to extract AND verify will quietly repair broken tax math into consistency. It hands you a clean number and destroys the signal you were looking for. Extraction transcribes; validation judges. Never the same model.\n\nThe parser is disposable. The harness is the asset.\n\nBuilt at @GrowthX with Priyank Mehta (SaarthiOS). 100% open source, ₹0 track available."},
+    {n:"X / Twitter",col:"#e8edf2",icon:"𝕏",u:"https://x.com/growthxclub",h:"@growthxclub",
+     t:"Built a document pipeline today and graded it honestly.\n\n94% accuracy sounds great until you slice it: 100% on clean docs, 40% on the broken 8% — and the broken 8% is why the pipeline exists.\n\nHeadline accuracy is a lie. Slice by difficulty tier or you are reporting nothing.\n\n@growthxclub"},
+    {n:"Email",col:"#3fa9ff",icon:"✉",u:"mailto:community@growthx.club",h:"community@growthx.club",
+     t:"Subject: Built my extraction pipeline at Sunday's workshop\n\nHey GrowthX,\n\nTrack I ran: [A local / B API / C framework]\nDocument type I am pointing it at next: [type]\nOverall score: [X]%\nScore on the broken tier: [Y]%\nValidator recall: [N]/10\nCost per document, extrapolated to [volume]/month: [₹]\n\nThe finding I did not expect: [one sentence]\nWhat I am changing on Monday: [one sentence]\n\nThanks — that was the first workshop I have left with a number instead of a notebook."}
+  ];
+  let html='<div style="padding:26px 30px;background:linear-gradient(135deg,#3fa9ff0a,#3ddc9708);border:1px solid #3fa9ff22;border-radius:12px;margin-bottom:36px"><div style="font-family:var(--display);font-size:24px;font-weight:500;color:var(--cream);line-height:1.25">You have a number you can defend.<br>Almost nobody posting about AI agents does.</div></div>'+
+
+  h2("What to post")+
+  p("Not a screenshot of the dashboard. Post the gap between your overall score and your broken-tier score, and what you did about it. That gap is the most interesting sentence anyone will read about AI extraction this week.")+
+  '<div class="checks">'+
+  [["The two numbers, not one","'94% overall, 40% on the hard tier' is a post. '94% accurate' is a press release nobody believes."],
+   ["The silent correction","If your model repaired broken tax math, say so. It is the single most surprising thing in the workshop and most engineers have never seen it demonstrated."],
+   ["The cost at real volume","₹50 per 100 documents versus ₹5,00,000 a month at your actual volume. Same number, different decision."],
+   ["Tag GrowthX and Priyank","Handles below."]
+  ].map((x,i)=>'<div class="check"><div class="m">'+(i+1)+'.</div><div class="t"><b>'+x[0]+'</b> &mdash; '+x[1]+'</div></div>').join("")+
+  '</div>'+
+  h2("Post it here");
+  posts.forEach(pf=>{
+    html+='<div class="postcard"><div class="ph"><div style="display:flex;align-items:center;gap:12px"><span style="font-family:var(--mono);font-size:12px;color:'+pf.col+';background:'+pf.col+'14;padding:3px 9px;border-radius:4px;border:1px solid '+pf.col+'30">'+pf.icon+'</span><div><div class="pn">'+pf.n+'</div><div class="pu">'+pf.h+'</div></div></div><div style="display:flex;gap:8px"><button class="brag-copy-btn" data-text="'+esc(pf.t)+'">copy</button><a class="open-link" href="'+pf.u+'" target="_blank" rel="noopener noreferrer" style="color:'+pf.col+';border:1px solid '+pf.col+'33;background:'+pf.col+'08">Open &rarr;</a></div></div><pre>'+esc(pf.t)+'</pre></div>';
+  });
+  html+=h2("One last thing")+
+  p("Most teams are still arguing about which model to use. You spent a Sunday building the instrument that answers that question for your own documents, and you can defend every number it produces. Run it again when the next model ships — that is a different conversation to be in.")+
+  callout("The dataset is seeded. Regenerate it with <span style='font-family:var(--mono)'>--seed 42</span> in six months and today's score is still directly comparable. Almost nobody has that.","tip");
+  return html;
+}
+
+/* ---------- render ---------- */
+function renderNav(){
+  const items=document.getElementById("navItems");
+  items.innerHTML=SECTIONS.map(s=>{
+    const acc=isAccessible(s.id), done=completed.has(s.id), isActive=active===s.id;
+    let cls="nav-btn";
+    if(isActive)cls+=s.id==="brag"?" active-brag":" active";
+    if(!acc)cls+=" locked";
+    if(done&&!isActive)cls+=" done";
+    return '<button class="'+cls+'" data-id="'+s.id+'" '+(acc?"":"disabled")+'><span class="icon">'+(done&&!isActive?"✓":s.icon)+'</span><span class="text">'+s.label+'</span></button>';
+  }).join("");
+  items.querySelectorAll(".nav-btn").forEach(btn=>btn.addEventListener("click",()=>{
+    if(!isAccessible(btn.dataset.id))return;
+    active=btn.dataset.id;sidebarOpen=false;
+    document.getElementById("sidebar").classList.remove("open");
+    document.getElementById("overlay").classList.remove("show");
+    document.getElementById("mobileToggle").innerHTML="&#9776;";
+    render();document.getElementById("mainContent").scrollTop=0;
+  }));
+  document.getElementById("navProgress").innerHTML=SECTIONS.map(s=>
+    '<div class="'+(completed.has(s.id)?"done":active===s.id?"current":"")+'"></div>').join("");
+}
+
+function renderContent(){
+  const ci=SECTIONS.findIndex(s=>s.id===active), s=SECTIONS[ci], alt=s.id==="brag";
+  let html='<div class="section-header"><span class="num '+(alt?"alt":"")+'">'+s.icon+'</span><h1>'+s.label+'</h1><div class="bar '+(alt?"alt":"")+'"></div></div><div class="section-body">';
+  html+={welcome:welcomeHTML,failures:failuresHTML,ideas:ideasHTML,scope:scopeHTML,setup:setupHTML,building:buildingHTML,after:afterHTML,brag:bragHTML}[active]();
+  html+='</div>';
+  if(active!=="scope"&&active!=="brag"&&!completed.has(active)&&ci<SECTIONS.length-1){
+    html+='<button class="continue-btn" id="continueBtn">Done. Continue to '+SECTIONS[ci+1].label+' &rarr;</button>';
+  }
+  if(completed.has(active)){
+    html+='<div style="display:flex;justify-content:space-between;gap:12px;margin-top:56px;padding-top:28px;border-top:1px solid var(--hair);flex-wrap:wrap">';
+    html+=(SECTIONS[ci-1]&&isAccessible(SECTIONS[ci-1].id))?'<button class="nav-page-btn" data-id="'+SECTIONS[ci-1].id+'" style="background:none;border:1px solid var(--hair-2);border-radius:8px;color:#8a8f95;padding:10px 16px;font-family:var(--serif);font-size:14px;cursor:pointer">&larr; '+SECTIONS[ci-1].label+'</button>':'<span></span>';
+    html+=(SECTIONS[ci+1]&&isAccessible(SECTIONS[ci+1].id))?'<button class="nav-page-btn" data-id="'+SECTIONS[ci+1].id+'" style="background:#3fa9ff0d;border:1px solid #3fa9ff33;border-radius:8px;color:var(--accent);padding:10px 16px;font-family:var(--serif);font-size:14px;cursor:pointer">'+SECTIONS[ci+1].label+' &rarr;</button>':'<span></span>';
+    html+='</div>';
+  }
+  document.getElementById("contentArea").innerHTML=html;
+  bindEvents();
+}
+
+function bindEvents(){
+  const cb=document.getElementById("continueBtn");
+  if(cb)cb.addEventListener("click",()=>{
+    completed.add(active);
+    const ci=SECTIONS.findIndex(s=>s.id===active);
+    if(ci<SECTIONS.length-1){active=SECTIONS[ci+1].id;render();document.getElementById("mainContent").scrollTop=0;}
+  });
+  const lb=document.getElementById("lockBtn");
+  if(lb)lb.addEventListener("click",()=>{
+    scopeLocked=true;completed.add("scope");active="setup";
+    render();document.getElementById("mainContent").scrollTop=0;
+  });
+  document.querySelectorAll(".nav-page-btn").forEach(bt=>bt.addEventListener("click",()=>{
+    active=bt.dataset.id;render();document.getElementById("mainContent").scrollTop=0;
+  }));
+  document.querySelectorAll(".copy-code-btn,.brag-copy-btn").forEach(bt=>bt.addEventListener("click",()=>{
+    navigator.clipboard.writeText(bt.dataset.code||bt.dataset.text);
+    const o=bt.textContent;bt.textContent="copied";bt.classList.add("copied");
+    setTimeout(()=>{bt.textContent=o;bt.classList.remove("copied")},1800);
+  }));
+  document.querySelectorAll(".pcard-toggle").forEach(bt=>bt.addEventListener("click",()=>{
+    bt.closest(".pcard").classList.toggle("expanded");
+  }));
+  document.querySelectorAll(".sev-filter").forEach(bt=>bt.addEventListener("click",()=>{sevFilter=bt.dataset.val;renderContent();}));
+  document.querySelectorAll(".mod-filter").forEach(bt=>bt.addEventListener("click",()=>{modFilter=bt.dataset.val;renderContent();}));
+  document.querySelectorAll(".scope-field").forEach(el=>el.addEventListener("input",e=>{
+    scopeData[e.target.dataset.key]=e.target.value;updateScopePreview();
+  }));
+}
+
+function render(){renderNav();renderContent();if(active==="scope")setTimeout(updateScopePreview,0);}
+
+document.getElementById("mainContent").addEventListener("scroll",function(){
+  const pct=Math.min(this.scrollTop/((this.scrollHeight-this.clientHeight)||1),1);
+  document.getElementById("progressFill").style.width=(pct*100)+"%";
+});
+document.getElementById("mobileToggle").addEventListener("click",()=>{
+  sidebarOpen=!sidebarOpen;
+  document.getElementById("sidebar").classList.toggle("open",sidebarOpen);
+  document.getElementById("overlay").classList.toggle("show",sidebarOpen);
+  document.getElementById("mobileToggle").innerHTML=sidebarOpen?"&#10005;":"&#9776;";
+});
+document.getElementById("overlay").addEventListener("click",()=>{
+  sidebarOpen=false;
+  document.getElementById("sidebar").classList.remove("open");
+  document.getElementById("overlay").classList.remove("show");
+  document.getElementById("mobileToggle").innerHTML="&#9776;";
+});
+
+render();
+</script>
+
+</body>
+</html>
