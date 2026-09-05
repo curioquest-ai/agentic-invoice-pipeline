@@ -4,7 +4,7 @@
 |---|---|---|---|
 | **A** free/local | `python track_a_local.py --limit 5` | `ollama pull qwen2.5vl:7b` (at home!) | **run end to end, measured** |
 | **B** paid API | `python track_b_api.py --limit 5` | `ANTHROPIC_API_KEY` in `.env` | corrected, **never executed** |
-| **C** framework | `python track_c_llamaindex.py --limit 5` | `LLAMA_CLOUD_API_KEY` in `.env` + a heavy install. Stage 2 is local by default — no second key | corrected, **never executed** |
+| **C** framework | `python track_c_llamaindex.py --limit 5` | `LLAMA_CLOUD_API_KEY` in `.env` + a ~180 MB install. Stage 2 is local by default — no second key | **stage 2 verified**, stage 1 never run |
 
 Always smoke-test with `--limit 5` before spending time or money on 100.
 All three emit the same `schema.Invoice` and the same `validators.validate()` flags —
@@ -14,8 +14,10 @@ All three take `--model` now, so you can swap models without editing source. Tha
 followed by a re-run of the same eval, *is* the workshop.
 
 > **Honesty note.** Track A was run end to end many times and every number quoted for it is
-> measured. Tracks B and C were corrected from provider documentation but never executed —
-> we had no API keys. Their first real run may surface something. Smoke-test at `--limit 1`.
+> measured. **Track B has never been executed** — no key. **Track C is half verified**: stage 2
+> (Ollama → `structured_predict` → `Invoice`) really does run and returns a valid Invoice in
+> ~5.5 s on an 8 GB M2; stage 1 (LlamaParse) has never run because we had no LlamaCloud key.
+> Smoke-test at `--limit 1` regardless.
 
 ---
 
@@ -114,7 +116,9 @@ them into each JSONL row, and sum. It is about six lines.
 | B | `authentication_error` | `ANTHROPIC_API_KEY=sk-ant-…` in repo-root `.env` |
 | B | Every doc `ERR`, output file full, score 0% | a rejected request parameter — read the error text on row 1 rather than the wall of them |
 | B | Unexplained `ValidationError` on a long invoice | `max_tokens` truncation. `parse_one` now names this explicitly; raise `TRACK_B_MAX_TOKENS` |
-| C | `ModuleNotFoundError: llama_cloud_services` | the llama-index lines in `requirements.txt` are commented out on purpose. Uncomment, `pip install`, **at home** |
+| C | `ModuleNotFoundError: llama_cloud_services` | the llama-index lines in `requirements.txt` are commented out on purpose (~180 MB). Uncomment, `pip install`, **at home** |
+| C | Stage 2 hangs, then times out on a *tiny* prompt | **Measured, and the sharpest finding on this track.** llama-index's `Ollama` defaults `context_window=-1`, meaning the model's full 131,072 — Ollama then allocates a 128K KV cache on a laptop that cannot afford it. A 365-token prompt took **over 3 minutes and timed out**. Pinning `context_window=8192` (Track A's measured value) took the identical call to **5.5 s**. Now pinned in `_make_llm()`; override with `TRACK_C_NUM_CTX` |
+| C | `DeprecationWarning` on import | `llama-cloud-services`' stated maintenance window ended **2026-05-01**. Successor: `pip install llama-cloud>=1.0`. It still works — we kept what we could verify |
 | C | Raises inside `Anthropic(...)` before any network call | llama-index keeps its own model→context-window registry. Upgrade `llama-index-llms-anthropic`, or `--model` an id it knows |
 | C | `LLAMA_CLOUD_API_KEY` missing | stage 1 needs it. Stage 2 does not need a key unless you set `TRACK_C_LLM=anthropic` |
 

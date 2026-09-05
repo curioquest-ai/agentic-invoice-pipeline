@@ -1,8 +1,12 @@
 """Track C -- framework path. PDF -> LlamaParse (markdown) -> LLM extraction.
 
-!! NEVER EXECUTED, AND NOT INSTALLED. The llama-index lines in requirements.txt
-!! are commented out on purpose (the install is heavy), so nothing here has ever
-!! run. It has been corrected from the provider docs, not from a green test.
+!! HALF VERIFIED, 2026-09-05.
+!! STAGE 2 (Ollama -> structured_predict -> Invoice) HAS been run: it returns a
+!!   valid Invoice from a real dataset PDF in ~5.5s on an 8 GB M2.
+!! STAGE 1 (LlamaParse) has NOT been run -- we had no LlamaCloud key. Everything
+!!   about it here comes from the docs, not from a green test.
+!! The install is also not in the default setup: the llama-index lines in
+!!   requirements.txt are commented out on purpose (it adds ~180 MB).
 
 Run:  pip install llama-cloud-services llama-index-core llama-index-llms-ollama
       python track_c_llamaindex.py --dataset ../02-generator/dataset [--limit 5]
@@ -24,6 +28,10 @@ THREE THINGS FAIL BEFORE THE NETWORK DOES -- check them in this order:
 
   1. ModuleNotFoundError. Nothing is installed until you uncomment
      requirements.txt and pip install. This is failure #1 for everyone.
+     Note llama-cloud-services prints a deprecation warning on import -- its
+     stated maintenance window ended 2026-05-01 and the successor is
+     `pip install llama-cloud>=1.0`. It still works; we kept it because it is
+     what we could verify, but do not be surprised by the warning.
   2. The model id, inside llama-index -- not inside the API. The llama-index
      LLM packages ship their own model registries and look the id up at
      construction. A release older than the model you name raises there, before
@@ -82,9 +90,22 @@ def _make_llm():
     """Stage 2. Local by default; paid only if you ask for it."""
     if LLM_BACKEND == "ollama":
         from llama_index.llms.ollama import Ollama  # pip install llama-index-llms-ollama
-        # LlamaParse + a local model is a slow pair; the default 30s timeout
-        # trips on longer documents and reads as a hang.
-        return Ollama(model=MODEL, request_timeout=180.0)
+        # Two defaults here will ruin your afternoon, both MEASURED on an 8 GB M2:
+        #
+        #   context_window defaults to -1, meaning "the model's full window" --
+        #   131,072 tokens for llama3.2:3b. Ollama then allocates a KV cache for
+        #   128K on a machine that cannot afford it, and a 365-token prompt takes
+        #   longer than three minutes. Pinning it to 8192 (the same value Track A
+        #   measured) took the identical call from TIMEOUT to 16.3 seconds.
+        #
+        #   request_timeout defaults to 30s, which trips on longer documents and
+        #   reads as a hang rather than an error.
+        #
+        # This is the framework tax, precisely: Track A sets num_ctx explicitly
+        # because we measured it. The abstraction picked a different default and
+        # did not tell us.
+        return Ollama(model=MODEL, request_timeout=180.0,
+                      context_window=int(os.environ.get("TRACK_C_NUM_CTX", "8192")))
     if LLM_BACKEND == "anthropic":
         from llama_index.llms.anthropic import Anthropic  # pip install llama-index-llms-anthropic
         # No temperature: sampling parameters return HTTP 400 on current

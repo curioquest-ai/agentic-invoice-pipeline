@@ -13,7 +13,8 @@ pdfplumber
 anthropic
 
 # Track C — framework (comment out if not your track; heavier install)
-# llama-cloud-services
+# llama-cloud-services        # stage 1. NOTE: maintenance ended 2026-05-01;
+#                             # successor is llama-cloud>=1.0. Still works.
 # llama-index-core
 # llama-index-llms-ollama       # stage 2, default: local, no key
 # llama-index-llms-anthropic   # stage 2, only if TRACK_C_LLM=anthropic

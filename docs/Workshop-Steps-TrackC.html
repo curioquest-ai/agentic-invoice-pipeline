@@ -151,12 +151,14 @@ footer{margin-top:70px;padding-top:22px;border-top:1px solid var(--rule);
   out what a framework buys you, and what it charges.</p>
 </header>
 
-<div class="panel warn"><span class="lab">Read this before you start</span>
-    <b>This track has never been executed.</b> Track A was run end to end many times and every
-    number quoted for it is measured. This one was corrected from the provider documentation
-    during the pre-flight, but we had no API key, so no call has ever completed. Expect to be
-    the first person to run it. <b>Start at <code>--limit 1</code></b>, and read the error on
-    the <i>first</i> row rather than the wall of them.</div>
+<div class="panel check"><span class="lab">Half of this track is now verified</span>
+    <b>Stage 2 really runs.</b> On 5 Sep we installed the packages and put a real dataset PDF
+    through <code>structured_predict</code> on a local model: it returned a valid
+    <code>Invoice</code> in <b>5.5 seconds</b> on an 8 GB M2. The code you are about to run has
+    executed.
+    <br><br><b>Stage 1 has not.</b> We had no LlamaCloud key, so every claim about LlamaParse
+    here comes from its documentation. <b>Start at <code>--limit 1</code></b> and read the error
+    on the <i>first</i> row rather than the wall of them.</div>
 
 <div class="blockhead"><span class="t">Why</span><h2>The two-stage pattern</h2></div>
 <p class="blockintro">This is the shape most real document pipelines end up in, and it is worth
@@ -223,7 +225,8 @@ pip install -r requirements.txt</pre>
 <div class="step">
   <span class="stepno">Step C3</span>
   <h3>One document, and expect to debug the install before the API</h3>
-  <pre>cd 03-parser
+  <pre>ollama serve &amp;                       # stage 2 runs locally
+cd 03-parser
 python track_c_llamaindex.py --dataset ../02-generator/dataset --limit 1</pre>
   <div class="panel warn"><span class="lab">Three things fail before the network does — in this order</span>
     <b>1 · <code>ModuleNotFoundError: llama_cloud_services</code></b> — Step C1 not done. This
@@ -237,8 +240,19 @@ python track_c_llamaindex.py --dataset ../02-generator/dataset --limit 1</pre>
     It fails in stage 1, before extraction is ever attempted. On the default local stage 2 that
     is the only key you need — make sure <code>ollama serve</code> is running instead.</div>
   <div class="panel check"><span class="lab">Check it worked</span>
-    <code>[C-llamaindex] inv_0001  OK  …s</code>, then <code>done: 1 ok, 0 errors</code>.
-    Stage 1 is a network round-trip per document, so expect this to be slower than Track B.</div>
+    A line naming the pipeline — <code>[C] stage 1 LlamaParse -&gt; stage 2 ollama:llama3.2:3b</code>
+    — then <code>[C-llamaindex] inv_0001  OK  …s</code> and <code>done: 1 ok, 0 errors</code>.
+    Stage 1 is a network round-trip per document, so expect this to be slower than Track A.</div>
+  <div class="panel why"><span class="lab">The default that would have cost you the afternoon</span>
+    We hit this for real. llama-index's <code>Ollama</code> defaults
+    <code>context_window=-1</code> — meaning <i>the model's full window</i>, 131,072 tokens for
+    llama3.2:3b. Ollama dutifully allocates a 128K KV cache on a laptop that cannot afford one,
+    and a <b>365-token prompt took over three minutes and timed out</b>.
+    <br><br>Pinning it to <b>8192</b> — the same value Track A measured — took the identical
+    call to <b>5.5 seconds</b>. It is now pinned in the code
+    (<code>TRACK_C_NUM_CTX</code> to override).
+    <br><br>This is the framework tax, exactly: Track A sets <code>num_ctx</code> because we
+    measured it. The abstraction chose a different default and did not mention it.</div>
 </div>
 
 <div class="step">
@@ -274,7 +288,13 @@ python eval.py --outputs ../03-parser/outputs_track_c.jsonl \
     on identical hardware, look here before you blame LlamaParse.</div>
 </div>
 
-<div class="panel why"><span class="lab">This sheet covers the parser only</span>
+<div class="panel warn"><span class="lab">One more thing you will see on import</span>
+    <code>llama-cloud-services</code> prints a deprecation warning: its stated maintenance
+    window ended <b>2026-05-01</b>, and the successor is <code>pip install llama-cloud&gt;=1.0</code>.
+    It still works — we kept the package we could actually verify — but do not be surprised.
+    A pinned-and-dying dependency is part of what a framework costs you.</div>
+
+  <div class="panel why"><span class="lab">This sheet covers the parser only</span>
     Everything before and after — the form server, the data factory, the trust check, reading
     the eval report, and the improve loop — is in <b>Workshop-Steps.html</b> and is identical
     for all three tracks. Come here at <b>14:00</b>, go back there at <b>15:00</b>.</div>
