@@ -76,7 +76,54 @@
   <p class="body big">Manufacture a messy invoice dataset with known answers → parse it with the stack of your choice → grade the parser against the answers we manufactured.<br><br>By 16:30 you'll know which stack wins on accuracy, cost, and latency — measured in this room, on documents you built.</p>
 </section>
 
-<!-- 2 · Demo AI fails in enterprises because nobody -->
+<!-- 2 · One experiment, three arms — and only three -->
+<section class="slide">
+  <div class="kicker">The goal</div>
+  <h1>One experiment, three arms — and only three things vary</h1>
+  <div class="tw"><table>
+    <tr><th>What varies</th><th>A · free &amp; local</th><th>B · paid API</th><th>C · framework</th></tr>
+    <tr>
+      <td><b>1 · What reads<br>the document</b></td>
+      <td>the model's own eyes (PNG),<br>or <code>pdfplumber</code> on the text layer</td>
+      <td>Claude reads the PDF natively</td>
+      <td><b>two stages:</b> LlamaParse → markdown,<br><i>then</i> a model</td>
+    </tr>
+    <tr>
+      <td><b>2 · How the answer is<br>forced into your schema</b></td>
+      <td><code>format=</code> JSON schema<br><b>constrained decoding</b></td>
+      <td>forced <code>tool_choice</code></td>
+      <td><code>structured_predict</code></td>
+    </tr>
+    <tr>
+      <td><b>3 · What it costs,<br>and in what currency</b></td>
+      <td>₹0 — you pay in <b>RAM and time</b></td>
+      <td>~₹0.75/doc <i>est.</i><br>you pay in <b>money</b></td>
+      <td>₹0 — you pay in <b>pages and install</b></td>
+    </tr>
+  </table></div>
+  <div class="callout">
+    <div class="box learn"><b>Key learning</b>Everything else is <b>held constant on purpose</b>: one schema, one prompt, one set of validators, one scorer. Only those three rows change. That is the difference between <b>an experiment</b> and three disconnected demos — and it is why the 15:45 leaderboard means anything at all.</div>
+  </div>
+</section>
+
+<!-- 3 · "Structured output" means three different th -->
+<section class="slide">
+  <div class="kicker">The goal · row 2, expanded</div>
+  <h1>"Structured output" means three different things here</h1>
+  <div class="body">Row 2 is the one people assume is equivalent across the three. It is not — and the ranking is the opposite of what price suggests.</div>
+  <div class="tw"><table>
+    <tr><th>Track</th><th>Mechanism</th><th>What it actually guarantees</th></tr>
+    <tr><td><b>A</b> local</td><td><code>format=&lt;json schema&gt;</code></td><td><b>Strongest.</b> Constrained decoding — the generated tokens <i>cannot</i> leave your schema</td></tr>
+    <tr><td><b>B</b> API</td><td><code>tool_choice={"type":"tool"}</code></td><td>A <code>tool_use</code> block — <b>not</b> that its contents validate. <code>strict:true</code> would, but needs <code>additionalProperties:false</code>, which Pydantic does not emit</td></tr>
+    <tr><td><b>C</b> framework</td><td><code>structured_predict</code></td><td><b>Weakest.</b> Routes through tool-calling, so you lose the decoding guarantee A gave you for free</td></tr>
+  </table></div>
+  <div class="callout">
+    <div class="box learn"><b>Key learning</b>The <b>free, local</b> track has the strongest structured-output guarantee of the three. Price does not buy correctness here — it buys a different set of trade-offs, which is exactly what you are here to measure.</div>
+    <div class="box gotcha"><b>Gotcha</b>None of the three removes your validation layer. Structured output removes a class of <i>parsing</i> bugs; <code>Invoice.model_validate()</code> and <code>validators.py</code> are still what catch a wrong answer.</div>
+  </div>
+</section>
+
+<!-- 4 · Demo AI fails in enterprises because nobody -->
 <section class="slide">
   <div class="kicker">Framing</div>
   <h1>Demo AI fails in enterprises because nobody can measure it</h1>
@@ -90,7 +137,7 @@
   <div class="callout"><div class="box learn"><b>Key learning</b>The pipeline around the model is the product. The model is a swappable part.</div></div>
 </section>
 
-<!-- 3 · The enterprise AI stack is 6 layers — and op -->
+<!-- 5 · The enterprise AI stack is 6 layers — and op -->
 <section class="slide">
   <div class="kicker">M1 · Theory</div>
   <h1>The enterprise AI stack is 6 layers — and open-vs-paid is decided per layer, not per company</h1>
@@ -103,9 +150,12 @@
     <tr><td>Eval/observability</td><td>promptfoo, today's harness</td><td>LangSmith, Braintrust</td><td>Team workflows, regression CI</td></tr>
     <tr><td>Serving/infra</td><td>FastAPI + queue + Postgres</td><td>Modal, managed endpoints</td><td>Elasticity, SLAs</td></tr>
   </table>
+  <div class="callout">
+    <div class="box learn"><b>Key learning</b>Today's three tracks are three different answers at the <b>top three rows only</b> — models, doc parsing, orchestration. Rows 4–6 are identical for everyone in this room. That is deliberate: hold most of the stack constant and the comparison stays honest.</div>
+  </div>
 </section>
 
-<!-- 4 · The real trade-off is a triangle: cost, cont -->
+<!-- 6 · The real trade-off is a triangle: cost, cont -->
 <section class="slide">
   <div class="kicker">M1 · Theory</div>
   <h1>The real trade-off is a triangle: cost, control, time-to-ship</h1>
@@ -116,13 +166,19 @@
       <li>We'll do the per-document arithmetic at <b>15:45</b> — with real numbers from this room.</li>
     </ul>
   </div>
+  <div class="tw"><table>
+    <tr><th></th><th>Cost</th><th>Control</th><th>Time-to-ship</th></tr>
+    <tr><td><b>A</b> local</td><td>₹0, and 16 GB of your laptop</td><td><b>total</b> — weights, prompt, decoding</td><td>slowest: a model download and a lot of RAM</td></tr>
+    <tr><td><b>B</b> API</td><td>real money, per document, forever</td><td>a key and a model name</td><td><b>fastest</b> — one pip install</td></tr>
+    <tr><td><b>C</b> framework</td><td>free tier, then per page</td><td>you own the schema, not the parsing</td><td>slow to install, fast to extend</td></tr>
+  </table></div>
   <div class="callout">
-    <div class="box learn"><b>Key learning</b>Pick the eval before the framework. If you can't measure it, every stack demo looks equally good.</div>
-    <div class="box gotcha"><b>Most common mistake</b>Choosing the orchestration framework first, then discovering there's no way to tell if switching models helped.</div>
+    <div class="box learn"><b>Key learning</b>Pick the eval before the framework. If you can't measure it, every stack demo looks equally good — and you will pick on vibes, or on whatever you installed first.</div>
+    <div class="box gotcha"><b>Most common mistake</b>Choosing the orchestration framework first, then discovering there's no way to tell if switching models helped. By 15:45 you will have a number for your corner of this triangle and be able to defend it.</div>
   </div>
 </section>
 
-<!-- 5 · Generate ground truth before you generate do -->
+<!-- 7 · Generate ground truth before you generate do -->
 <section class="slide">
   <div class="kicker">Rule of the day</div>
   <h1>Generate ground truth <i>before</i> you generate documents</h1>
@@ -130,7 +186,7 @@
 </section>
 
 
-<!-- 6 · Pick one document from the idea library and -->
+<!-- 8 · Pick one document from the idea library and -->
 <section class="slide">
   <div class="kicker">M2 · Choose your document</div>
   <h1>Pick one document from the idea library and live with it all day</h1>
@@ -150,7 +206,7 @@
   <div class="callout"><div class="box learn"><b>Key learning</b>The document changes; the harness doesn't. A pipeline whose eval survives a document swap is a pipeline, not a demo.</div></div>
 </section>
 
-<!-- 7 · Before you write code: which model, at what -->
+<!-- 9 · Before you write code: which model, at what -->
 <section class="slide">
   <div class="kicker">M1 · Step 1 · 12 minutes</div>
   <h1>Before you write code: which model, at what cost, and will it even run here?</h1>
@@ -168,7 +224,7 @@
   </div>
 </section>
 
-<!-- 8 · We'll manufacture 100 GST invoices with a fo -->
+<!-- 10 · We'll manufacture 100 GST invoices with a fo -->
 <section class="slide">
   <div class="kicker">M2 · Data factory</div>
   <h1>We'll manufacture 100 GST invoices with a form, a bot, and a chaos engine</h1>
@@ -183,7 +239,7 @@
   <div class="callout"><div class="box gotcha"><b>Gotcha</b>Forms without stable id/name attributes force bots into brittle XPath guessing. Accessibility and automatability are the same property.</div></div>
 </section>
 
-<!-- 9 · Realistic errors cluster — model the cluster -->
+<!-- 11 · Realistic errors cluster — model the cluster -->
 <section class="slide">
   <div class="kicker">M2 · Data factory</div>
   <h1>Realistic errors cluster — model the clusters, not random noise</h1>
@@ -200,7 +256,7 @@
   </div>
 </section>
 
-<!-- 10 · One of the hundred — this is what broken act -->
+<!-- 12 · One of the hundred — this is what broken act -->
 <section class="slide">
   <div class="kicker">M2 · Data factory · inv_0085</div>
   <h1>One of the hundred — this is what <span class="num">broken</span> actually looks like</h1>
@@ -229,7 +285,7 @@
   </div>
 </section>
 
-<!-- 11 · Playwright for browsers, OpenRPA for desktop -->
+<!-- 13 · Playwright for browsers, OpenRPA for desktop -->
 <section class="slide">
   <div class="kicker">M2 · Data factory</div>
   <h1>Playwright for browsers, OpenRPA for desktops — pick by target, not by hype</h1>
@@ -240,14 +296,14 @@
   <div class="callout"><div class="box learn"><b>Key learning</b>RPA choice is a function of the automation <i>target</i>. Browser → Playwright. Legacy desktop / Citrix → RPA suites. API exists → neither; call the API.</div></div>
 </section>
 
-<!-- 12 · Build the data factory -->
+<!-- 14 · Build the data factory -->
 <section class="slide handsopen">
   <div class="kicker">Hands-on · 60 min · 12:15</div>
   <h1>Build the data factory</h1>
   <p class="body big">01-form → 02-generator → 100 PDFs + ground_truth.jsonl<br><br>Stuck past 15 minutes? <code>checkpoints/dataset-100.zip</code> — same docs, same truth, zero shame.</p>
 </section>
 
-<!-- 13 · Three parser tracks, one schema — so the lea -->
+<!-- 15 · Three parser tracks, one schema — so the lea -->
 <section class="slide">
   <div class="kicker">M3 · Parser</div>
   <h1>Three parser tracks, one schema — so the leaderboard stays honest</h1>
@@ -261,7 +317,7 @@
   <div class="callout"><div class="box gotcha"><b>Gotcha</b>On an 8 GB laptop the vision path is not slow, it is <b>unusable</b> — the 7b will not fit a 4.8 GiB Metal budget and a 3b runs at <b>0.29 tok/s</b>, ~30 min per document. These invoices are born-digital, so the text layer is perfect and <code>pdfplumber</code> beats vision outright: <b>8 s/doc</b>, measured. Check what you are handing the model before you download 6 GB.</div></div>
 </section>
 
-<!-- 14 · Extraction transcribes; validation judges — -->
+<!-- 16 · Extraction transcribes; validation judges — -->
 <section class="slide">
   <div class="kicker">M3 · Parser</div>
   <h1>Extraction transcribes; validation judges — never let the model do both</h1>
@@ -276,7 +332,7 @@ validators.py (code):  GSTIN mod-36 checksum · Σitems + CGST + SGST ≈ total
   </div>
 </section>
 
-<!-- 15 · Two patterns you cannot learn from the free -->
+<!-- 17 · Two patterns you cannot learn from the free -->
 <section class="slide">
   <div class="kicker">M3 · Parser · why B and C exist</div>
   <h1>Two patterns you cannot learn from the free track</h1>
@@ -302,7 +358,7 @@ validators.py (code):  GSTIN mod-36 checksum · Σitems + CGST + SGST ≈ total
   </div>
 </section>
 
-<!-- 16 · The scariest failure is the silent correctio -->
+<!-- 18 · The scariest failure is the silent correctio -->
 <section class="slide">
   <div class="kicker">M3 · Parser</div>
   <h1>The scariest failure is the silent correction</h1>
@@ -320,7 +376,7 @@ consistent: true ✓</pre></div>
   <div class="callout"><div class="box learn"><b>Key learning</b>Verbatim extraction + code-side validation is the pattern. Rule 2 of the shared prompt exists for this slide.</div></div>
 </section>
 
-<!-- 17 · What the model actually returned for that in -->
+<!-- 19 · What the model actually returned for that in -->
 <section class="slide">
   <div class="kicker">M3 · Parser · inv_0085</div>
   <h1>What the model actually returned for that invoice</h1>
@@ -341,14 +397,14 @@ consistent: true ✓</pre></div>
   </div>
 </section>
 
-<!-- 18 · Build your parser -->
+<!-- 20 · Build your parser -->
 <section class="slide handsopen">
   <div class="kicker">Hands-on · 60 min · 14:00</div>
   <h1>Build your parser</h1>
   <p class="body big">Pick a track in <code>03-parser/</code> · smoke-test with <code>--limit 5</code> before running 100<br><br>Reference: <code>checkpoints/reference_outputs.jsonl</code> is what a perfect verbatim parser emits. Diff against it when your score looks wrong.</p>
 </section>
 
-<!-- 19 · Grade by field, sliced by difficulty — headl -->
+<!-- 21 · Grade by field, sliced by difficulty — headl -->
 <section class="slide">
   <div class="kicker">M4 · Eval</div>
   <h1>Grade by field, sliced by difficulty — headline accuracy hides the disasters</h1>
@@ -376,7 +432,7 @@ consistent: true ✓</pre></div>
   <div class="callout"><div class="box learn"><b>Key learning</b>Headline accuracy is a lie. "94% accurate" can mean 100% on clean docs and 40% on the broken 8%. The point is not that broken is always worst — it is that <b>until you slice, you do not know where your difficulty lives.</b></div><div class="box gotcha"><b>Gotcha</b>The broken tier injects <i>business-rule</i> violations — wrong tax math does not make a document harder to <b>read</b>. Our real difficulty was Indian 2-2-3 number formatting (<code>2,055.38</code> → <code>205538.0</code>), which cuts across every tier. Slicing is how you find that; assuming is how you miss it.</div></div>
 </section>
 
-<!-- 20 · A validator that flags everything scores 100 -->
+<!-- 22 · A validator that flags everything scores 100 -->
 <section class="slide">
   <div class="kicker">M4 · Eval</div>
   <h1>A validator that flags everything scores 100% recall</h1>
@@ -394,7 +450,7 @@ consistent: true ✓</pre></div>
   </div>
 </section>
 
-<!-- 21 · Three flags fired on that one invoice. Two o -->
+<!-- 23 · Three flags fired on that one invoice. Two o -->
 <section class="slide">
   <div class="kicker">M4 · Eval · inv_0085</div>
   <h1>Three flags fired on that one invoice. Two of them are real.</h1>
@@ -412,7 +468,7 @@ consistent: true ✓</pre></div>
   </div>
 </section>
 
-<!-- 22 · Normalize before you compare, or you'll fail -->
+<!-- 24 · Normalize before you compare, or you'll fail -->
 <section class="slide">
   <div class="kicker">M4 · Eval</div>
   <h1>Normalize before you compare, or you'll fail correct answers</h1>
@@ -430,7 +486,7 @@ consistent: true ✓</pre></div>
   </div>
 </section>
 
-<!-- 23 · At 1M docs/month, the cost table reorders th -->
+<!-- 25 · At 1M docs/month, the cost table reorders th -->
 <section class="slide">
   <div class="kicker">M4 · Eval</div>
   <h1>At 1M docs/month, the cost table reorders the winners</h1>
@@ -444,7 +500,7 @@ consistent: true ✓</pre></div>
   <div class="callout"><div class="box gotcha"><b>Gotcha</b>Cost measured on 100 docs and never extrapolated. ₹50 feels free; ₹5,00,000/month is a headcount. Same number.</div></div>
 </section>
 
-<!-- 24 · Production is mostly the broken 8%: retries, -->
+<!-- 26 · Production is mostly the broken 8%: retries, -->
 <section class="slide">
   <div class="kicker">M5 · Synthesis</div>
   <h1>Production is mostly the broken 8%: retries, audit, human-in-loop</h1>
@@ -461,7 +517,7 @@ consistent: true ✓</pre></div>
   <div class="callout"><div class="box learn"><b>Key learning</b>~80% of production effort goes to the 8% broken docs. Budget accordingly.</div></div>
 </section>
 
-<!-- 25 · The harness is the asset; the parser is disp -->
+<!-- 27 · The harness is the asset; the parser is disp -->
 <section class="slide handsopen">
   <div class="kicker">Close</div>
   <h1>The harness is the asset; the parser is disposable</h1>
