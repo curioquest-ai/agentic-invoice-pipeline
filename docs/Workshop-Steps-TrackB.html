@@ -265,25 +265,31 @@ python eval.py --outputs ../03-parser/outputs_track_b.jsonl \
 <div class="blockhead"><span class="t">₹</span><h2>What it costs — estimated, not measured</h2></div>
 <div class="step">
   <span class="stepno">The number</span>
-  <h3>₹0.75 a document, and why we cannot prove it</h3>
-  <p>At Sonnet 5's published <b>$2 / $10 per million</b> tokens, one of our one-page invoices
-  is roughly 2,500 input + 350 output tokens:</p>
+  <h3>₹1.01 a document — measured, after our estimate came in 26% low</h3>
+  <p>We first estimated from published per-token rates — 2,500 input + 350 output at
+  $2/$10 per million:</p>
   <pre>input   2,500 × $2/1M  = $0.0050
 output    350 × $10/1M = $0.0035
                        ≈ $0.0085/doc  ≈ ₹0.75/doc</pre>
+  <p>Then we ran all 100 and read the bill. <b>The estimate was 26% low.</b></p>
   <div class="tw"><table>
-  <thead><tr><th>Scale</th><th class="n">Cost</th><th>What that is</th></tr></thead>
+  <thead><tr><th></th><th class="n">estimated</th><th class="n">measured</th></tr></thead>
   <tbody>
-  <tr><td>today's 100 documents</td><td class="n">≈ ₹75</td><td>less than the chai order</td></tr>
-  <tr><td>1M documents / month</td><td class="n">≈ ₹7.5 lakh</td><td>a headcount</td></tr>
+  <tr><td>tokens per document</td><td class="n">2,500 + 350</td><td class="n"><b>3,562 + 504</b></td></tr>
+  <tr><td>per document</td><td class="n">₹0.75</td><td class="n"><b>₹1.01</b></td></tr>
+  <tr><td>today's 100 documents</td><td class="n">₹75</td><td class="n"><b>₹101</b> ($1.15)</td></tr>
+  <tr><td>1M documents / month</td><td class="n">₹7.5 lakh</td><td class="n"><b>₹10.1 lakh</b></td></tr>
   </tbody></table></div>
-  <div class="panel warn"><span class="lab">This is an estimate, and that is the lesson</span>
-    <code>track_b_api.py</code> never reads the <code>usage</code> block OpenRouter returns, so this repo <b>cannot
-    tell you what a document actually cost</b> — on the one track that could measure it. That
-    is gotcha <b>G6</b> in our own code — <b>we ran all 100, got the accuracy, and still cannot tell you the bill.</b>
-    Want the real figure? Read <code>usage.input_tokens</code> / <code>usage.output_tokens</code>
-    off the response, write them into each JSONL row, and sum. About six lines. It is the best
-    twenty minutes you could spend on this track.</div>
+  <div class="panel warn"><span class="lab">We got this wrong first, and that is the lesson</span>
+    Both token counts were about <b>43% higher</b> than we assumed, so the cost came out
+    <b>26% low</b>. At today's hundred that is ₹26 — nothing. At a million documents a month it
+    is a <b>₹2.6 lakh/month</b> error, which is the difference between a rollout that gets
+    approved and one that gets cancelled by finance.
+    <br><br>We had B's accuracy for a full day before we had its bill. That is gotcha
+    <b>G6</b> happening in our own repo. The code now sends <code>usage:{include:true}</code>
+    and records <code>cost_usd</code>, the token counts and <code>gen_id</code> per document,
+    then prints the exact <code>--cost-per-doc</code> to hand to <code>eval.py</code>.
+    <b>An accuracy number without a cost number is half an answer.</b></div>
 </div>
 
 <div class="panel why"><span class="lab">This sheet covers the parser only</span>

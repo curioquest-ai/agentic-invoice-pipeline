@@ -408,7 +408,7 @@ python track_c_llamaindex.py --limit 5</pre>
   <div class="panel check"><span class="lab">Check it worked</span>
     Five lines like <code>[A-local-text] inv_0001 OK 8.6s</code>, then <code>done: 5 ok, 0 errors</code>. Open <code>outputs_track_a.jsonl</code> and read one line. That is your parser's answer for one document.</div>
   <div class="panel warn"><span class="lab">On Track B, this rule is money</span>
-    <code>--limit 5</code> before the full hundred is the difference between about <b>₹4</b> and <b>₹75</b>. Always. (See Step 9b for where that number comes from — and why it is an estimate.)</div>
+    <code>--limit 5</code> before the full hundred is the difference between about <b>₹5</b> and <b>₹101</b>. Always. (Measured, not guessed — see Step 9b.)</div>
 </div>
 
 <div class="step">
@@ -432,7 +432,7 @@ python track_c_llamaindex.py --limit 5</pre>
     We expected this to be overkill on born-digital PDFs. <b>Measured over 100 documents with the same local model in stage 2, Track C beat Track A 82.8% to 72.9%</b> — winning <i>every</i> line-item field (rate +24, amount +15, HSN +15). Not text fidelity — <b>structure</b>: a markdown table with named columns beats a flat run of numbers. The price is 3× the latency (23.5 s vs 8.2 s) plus a LlamaParse page per document. <b>The framework buys you stage 1; the schema and validators stay yours.</b></div>
 
   <div class="panel check"><span class="lab">What Track B costs — estimated, not measured</span>
-    At Sonnet 5's published $2 / $10 per million tokens, one of our one-page invoices is roughly 2,500 input + 350 output tokens ≈ <b>$0.0085 ≈ ₹0.75/doc</b>. So <b>≈ ₹75</b> for today's hundred — and <b>≈ ₹7.5 lakh</b> at a million documents a month. That second number is a headcount.
+    <b>Measured, not estimated:</b> our 100-document run billed <b>$1.15</b> — <b>₹1.01/doc</b>, ₹101 for the batch, and <b>₹10.1 lakh</b> at a million documents a month. That last number is a headcount. We had estimated ₹0.75 from published rates and were <b>26% low</b>, because the real token counts were ~43% higher than assumed.
     <br><br>It is an <b>estimate</b>: the code never reads <code>resp.usage</code>, so the repo cannot tell you what a document actually cost. That is gotcha G6 happening in our own code, on the one track that could measure it.</div>
 
   <div class="panel warn"><span class="lab">If you see</span>

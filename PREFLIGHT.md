@@ -465,3 +465,29 @@ refused to fix anything.**
 
 Still unmeasured: the bill. `track_b_api.py` never records the `usage` block OpenRouter
 returns, so we have the accuracy and not the cost — G6 in our own repo, with the run complete.
+
+---
+
+## 13 · The cost estimate was 26% low (6 Sep)
+
+Added `usage:{include:true}` to Track B and re-ran one document, then reconciled against the
+OpenRouter dashboard for the 100-document batch.
+
+| | estimated | **measured** |
+|---|---:|---:|
+| tokens per document | 2,500 + 350 | **3,562 + 504** |
+| per document | ₹0.75 | **₹1.01** ($0.0115) |
+| 100 documents | ₹75 | **₹101** ($1.15) |
+| 1M documents/month | ₹7.5 lakh | **₹10.1 lakh** |
+
+Both token counts were ~43% higher than assumed, so the cost came out **26% low** — a
+**₹2.6 lakh/month** error at scale. We had B's accuracy for a day before we had its bill,
+which is gotcha G6 in our own repo.
+
+The old run cannot be back-filled: no `gen_id` was stored, and `/api/v1/activity` needs a
+management key and only covers *completed* UTC days. Every future row now carries
+`prompt_tokens`, `completion_tokens`, `cost_usd` and `gen_id`, and the run prints the exact
+`--cost-per-doc` to pass to `eval.py`.
+
+Corrected in the deck (goal slide, tracks table, cost slide, the G6 gotcha), both step sheets,
+the Track B sheet, the field manual, `03-parser/README.md` and the source docstring.

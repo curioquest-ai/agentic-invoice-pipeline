@@ -8,15 +8,18 @@
 !!   cgst_wrong_math documents it returned the broken figures exactly as printed
 !!   and let validators.py catch them. That is rule 2 working. See M3.
 
-Cost: STILL UNMEASURED, even though the run is done. Estimated ~Rs.0.75/doc --
-a one-page invoice is roughly 2,500 input + 350 output tokens, and
-anthropic/claude-sonnet-5 lists on OpenRouter at $2/$10 per million, the same as
-first-party. That is ~Rs.75 for the 100 documents we actually ran.
+Cost: MEASURED. The 100-document run billed $1.15 -- $0.0115/doc, about
+Rs.1.01 at 88/USD, so ~Rs.101 for the batch and ~Rs.10.1 LAKH at 1M docs/month.
 
-We got the accuracy and we still cannot tell you the bill, because this file
-never records the `usage` block OpenRouter returns. That is gotcha G6 happening
-in our own repo, with the run already complete. Read usage off the response,
-write it into each JSONL row, and sum -- about six lines.
+We had ESTIMATED Rs.0.75/doc from published per-token rates. The real number is
+26% higher, because a one-page invoice costs 3,562 prompt + 504 completion
+tokens, not the 2,500 + 350 we assumed -- both about 43% off. At a million
+documents a month that estimate was wrong by Rs.2.6 LAKH.
+
+That is gotcha G6, and we walked into it ourselves: we had the accuracy for days
+before we had the bill. This file now sends usage:{include:true} and records
+cost_usd, the token counts and gen_id per document, so nobody has to guess
+again. Cost is a measurement, not an estimate.
 
 Needs: OPENROUTER_API_KEY in the repo-root .env (auto-loaded by common.py).
 One key gets you every model on the platform, which is the point -- swap

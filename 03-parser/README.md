@@ -119,29 +119,26 @@ schema and the validators stay yours.**
 
 ---
 
-## What Track B costs — estimated, not measured
+## What Track B costs — measured, and our estimate was 26% low
 
-We cannot give you a real number, and the reason is itself the lesson.
+We first published an estimate from the published per-token rates: 2,500 input + 350 output
+tokens at $2/$10 per million ≈ **$0.0085/doc ≈ ₹0.75**. Then we ran it and read the bill.
 
-At Sonnet 5's published **$2 / $10 per million** tokens, one of our one-page invoices is
-roughly 2,500 input + 350 output tokens:
+| | estimated | **measured** |
+|---|---:|---:|
+| tokens per document | 2,500 + 350 | **3,562 + 504** |
+| per document | ₹0.75 | **₹1.01** ($0.0115) |
+| today's 100 documents | ₹75 | **₹101** ($1.15) |
+| at 1M documents/month | ₹7.5 lakh | **₹10.1 lakh** |
 
-```
-input   2,500 × $2/1M  = $0.0050
-output    350 × $10/1M = $0.0035
-                       ≈ $0.0085/doc  ≈ ₹0.75/doc
-```
+**The estimate was 26% low — a ₹2.6 lakh/month error at scale**, because both token counts
+were about 43% higher than we assumed. That is gotcha **G6**, and we walked into it ourselves:
+we had B's accuracy for a day before we had its bill.
 
-| | |
-|---|---|
-| today's 100 documents | **≈ ₹75** |
-| at 1M documents/month | **≈ ₹7.5 lakh** — a headcount, not a rounding error |
-
-**That is an estimate.** `track_b_api.py` never reads `resp.usage`, so the repo cannot report
-what a document actually cost — which is gotcha **G6** ("cost measured but never
-extrapolated") happening in our own code, on the one track that could measure it. If you want
-the true figure: read `usage.input_tokens` / `usage.output_tokens` off the response, write
-them into each JSONL row, and sum. It is about six lines.
+`track_b_api.py` now sends `usage:{include:true}` and records `cost_usd`, the token counts and
+`gen_id` per document, then prints the exact `--cost-per-doc` value to hand to `eval.py`.
+**Cost is a measurement now, not an estimate.** If you take one habit from this track, take
+that one: an accuracy number without a cost number is half an answer.
 
 ---
 

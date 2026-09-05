@@ -97,7 +97,7 @@
     <tr>
       <td><b>3 · What it costs,<br>and in what currency</b></td>
       <td>₹0 — you pay in <b>RAM and time</b></td>
-      <td>~₹0.75/doc <i>est.</i><br>you pay in <b>money</b><br><i>and it wins</i></td>
+      <td><b>₹1.01/doc</b>, measured<br>you pay in <b>money</b><br><i>and it wins</i></td>
       <td>₹0 — you pay in <b>pages and install</b></td>
     </tr>
   </table></div>
@@ -311,7 +311,7 @@
   <table>
     <tr><th>Track</th><th>Stack</th><th>Cost</th><th>Pick it if</th></tr>
     <tr><td>A · free/local</td><td><b>vision:</b> PNG → Qwen2.5-VL via Ollama<br><b>text:</b> pdfplumber → llama3.2:3b</td><td>₹0 · vision needs <b>16 GB</b> (8 GB free)<br>text path runs on 8 GB</td><td>No API keys, wants control</td></tr>
-    <tr><td>B · paid API</td><td>PDF → Claude via OpenRouter, <b>forced tool-call</b></td><td>~₹0.75/doc <i>est.</i><br>≈₹75 today · ₹7.5L at 1M/mo</td><td>Measured <b>100.0%</b> — and the fastest of the three</td></tr>
+    <tr><td>B · paid API</td><td>PDF → Claude via OpenRouter, <b>forced tool-call</b></td><td><b>₹1.01/doc</b> measured<br>₹101 today · <b>₹10.1L</b> at 1M/mo</td><td>Measured <b>100.0%</b> — and the fastest of the three</td></tr>
     <tr><td>C · framework</td><td>LlamaParse → markdown → LlamaIndex <code>structured_predict</code></td><td>₹0 — free tier + a local stage 2</td><td>Wants the best line-item accuracy we measured: <b>82.8%</b></td></tr>
   </table>
   <div class="body">All three emit the same Pydantic <code>Invoice</code>. Different schemas = incomparable scores = no leaderboard = four disconnected demos. <b>All three have now been run end to end over the same 100 documents. Every number on the leaderboard slide is measured.</b></div>
@@ -494,12 +494,12 @@ consistent: true ✓</pre></div>
   <table>
     <tr><th>Track</th><th>norm. acc</th><th>p50</th><th>flag precision</th><th>cost/doc</th><th>× 1M/month</th></tr>
     <tr><td>A · local</td><td>72.9%</td><td>8.2s</td><td>16%</td><td>₹0 + a laptop</td><td>hardware + ops</td></tr>
-    <tr><td><b>B · API</b></td><td><b>100.0%</b></td><td><b>5.0s</b></td><td><b>100%</b></td><td>~₹0.75 <i>est.</i></td><td>~₹7,50,000</td></tr>
+    <tr><td><b>B · API</b></td><td><b>100.0%</b></td><td><b>5.0s</b></td><td><b>100%</b></td><td><b>₹1.01</b></td><td><b>₹10,12,000</b></td></tr>
     <tr><td>C · framework</td><td>82.8%</td><td>23.5s</td><td>16%</td><td>₹0 + LlamaParse pages</td><td>tier math changes</td></tr>
   </table>
   <div class="body" style="font-size:2.05vh">Our numbers, same 100 documents, same schema, same scorer. <b>Yours go next to them.</b> B is both the most accurate <i>and</i> the fastest — and still the one you have to justify to finance every month.</div>
   <div class="body">Fill this in live from the room's leaderboard rows. Then argue. That argument — accuracy delta vs ₹5L/month vs an ops team — is the actual enterprise procurement conversation, and you'll be having it with data.</div>
-  <div class="callout"><div class="box gotcha"><b>Gotcha</b>Cost measured on 100 docs and never extrapolated. ₹50 feels free; ₹5,00,000/month is a headcount. Same number.</div></div>
+  <div class="callout"><div class="box gotcha"><b>Gotcha — we made this exact mistake</b>We published <b>₹0.75/doc</b> from published per-token rates, then read the actual bill: <b>₹1.01</b>. Our token estimate was 43% low, so the cost was <b>26% low</b> — and at a million documents a month that is a <b>₹2.6 lakh/month</b> error. An estimate is not a measurement. Read the usage off the response.</div></div>
 </section>
 
 <!-- 26 · Production is mostly the broken 8%: retries, -->
