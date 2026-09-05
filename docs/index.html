@@ -53,6 +53,33 @@
   .bad { background:#f7e0d8; padding:.05em .3em; font-weight:bold; }
   .fix { background:#dcece5; padding:.05em .3em; }
   pre.rec { font-size:1.5vh; line-height:1.4; white-space:pre-wrap; word-break:break-word; }
+
+  /* ── cost/accuracy small multiples ──────────────────────────────────────
+     Categorical slots 1-3 of the validated palette, fixed order, never cycled.
+     Validated against surface #faf8f4: lightness band PASS, chroma PASS,
+     CVD separation ΔE 9.2 deutan PASS, normal-vision ΔE 27.6 PASS. Contrast
+     WARNed on the aqua, so every bar carries a visible value label - that is
+     the required relief, not a nicety. */
+  .viz { --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a;
+         --ink:#141414; --mut:#666; --rule:#c9c2b6;
+         display:flex; gap:2.6vw; margin:2.4vh 0 0 }
+  .viz .panel { flex:1; min-width:0 }
+  .viz .ptitle { font-family:ui-monospace,monospace; font-size:1.6vh; font-weight:700;
+                 letter-spacing:.1em; text-transform:uppercase; color:var(--mut);
+                 padding-bottom:.5vh; border-bottom:1px solid var(--rule); margin-bottom:1vh }
+  .viz .row { display:grid; grid-template-columns:6.4ch 1fr auto; align-items:center;
+              gap:.7vw; margin-bottom:1.3vh }          /* 2px-equivalent gap between fills */
+  .viz .rl { font-size:2vh; color:var(--ink); font-weight:600 }
+  .viz .track { display:block; height:3.1vh; background:#00000010; border-radius:2px; overflow:hidden }
+  .viz .bar { display:block; height:100%; border-radius:0 4px 4px 0 }
+  .viz .bar[style*="width:0.0%"] { display:none }   /* zero draws nothing, not a sliver */  /* rounded data-end, anchored to baseline */
+  .viz .val { font-family:ui-monospace,monospace; font-size:1.9vh; font-weight:700;
+              color:var(--ink); font-variant-numeric:tabular-nums; white-space:nowrap }
+  .viz .note { font-size:1.55vh; color:var(--mut); margin-top:.5vh; line-height:1.35 }
+  .viz-key { display:flex; gap:1.6vw; align-items:center; font-size:1.55vh; color:var(--mut);
+             font-family:ui-monospace,monospace; margin-top:.4vh }
+  .viz-key i { display:inline-block; width:1.1vh; height:1.1vh; border-radius:2px;
+               margin-right:.45vw; vertical-align:-.05vh }
   @media print {
     .slide { display:flex !important; height:auto; min-height:100vh; page-break-after:always; overflow:visible; }
     .footer { display:none; }
@@ -491,14 +518,32 @@ consistent: true ✓</pre></div>
 <section class="slide">
   <div class="kicker">M4 · Eval</div>
   <h1>At 1M docs/month, the cost table reorders the winners</h1>
-  <table>
-    <tr><th>Track</th><th>norm. acc</th><th>p50</th><th>flag precision</th><th>cost/doc</th><th>× 1M/month</th></tr>
-    <tr><td>A · local</td><td>72.9%</td><td>8.2s</td><td>16%</td><td>₹0 + a laptop</td><td>hardware + ops</td></tr>
-    <tr><td><b>B · API</b></td><td><b>100.0%</b></td><td><b>5.0s</b></td><td><b>100%</b></td><td><b>₹1.01</b></td><td><b>₹10,12,000</b></td></tr>
-    <tr><td>C · framework</td><td>82.8%</td><td>23.5s</td><td>16%</td><td>₹0 + LlamaParse pages</td><td>tier math changes</td></tr>
-  </table>
-  <div class="body" style="font-size:2.05vh">Our numbers, same 100 documents, same schema, same scorer. <b>Yours go next to them.</b> B is both the most accurate <i>and</i> the fastest — and still the one you have to justify to finance every month.</div>
-  <div class="body">Fill this in live from the room's leaderboard rows. Then argue. That argument — accuracy delta vs ₹5L/month vs an ops team — is the actual enterprise procurement conversation, and you'll be having it with data.</div>
+  <div class="viz">
+    <div class="panel">
+      <div class="ptitle">Accuracy</div>
+      <div class="row"><span class="rl">A</span><span class="track"><span class="bar" style="width:72.9%;background:var(--s1)"></span></span><span class="val">72.9%</span></div>
+      <div class="row"><span class="rl">B</span><span class="track"><span class="bar" style="width:100.0%;background:var(--s2)"></span></span><span class="val">100.0%</span></div>
+      <div class="row"><span class="rl">C</span><span class="track"><span class="bar" style="width:82.8%;background:var(--s3)"></span></span><span class="val">82.8%</span></div>
+      <div class="note">Measured, same 100 documents.</div>
+    </div>
+    <div class="panel">
+      <div class="ptitle">Cost · 1M docs/month</div>
+      <div class="row"><span class="rl">A</span><span class="track"><span class="bar" style="width:0.0%;background:var(--s1)"></span></span><span class="val">₹0</span></div>
+      <div class="row"><span class="rl">B</span><span class="track"><span class="bar" style="width:100.0%;background:var(--s2)"></span></span><span class="val">₹10.1L</span></div>
+      <div class="row"><span class="rl">C</span><span class="track"><span class="bar" style="width:10.9%;background:var(--s3)"></span></span><span class="val">₹1.1L</span></div>
+      <div class="note">B measured ($0.0115/doc). C at LlamaParse sticker — 1 credit/page, $1.25 per 1,000 credits — stage 2 local.</div>
+    </div>
+    <div class="panel">
+      <div class="ptitle">Machines running 24/7</div>
+      <div class="row"><span class="rl">A</span><span class="track"><span class="bar" style="width:35.6%;background:var(--s1)"></span></span><span class="val">3.2</span></div>
+      <div class="row"><span class="rl">B</span><span class="track"><span class="bar" style="width:0.0%;background:var(--s2)"></span></span><span class="val">none</span></div>
+      <div class="row"><span class="rl">C</span><span class="track"><span class="bar" style="width:100.0%;background:var(--s3)"></span></span><span class="val">9.0</span></div>
+      <div class="note">To keep up with 1M docs/month at the measured latency. <b>This is where "₹0" stops being zero.</b></div>
+    </div>
+  </div>
+  <div class="viz-key"><span><i style="background:var(--s1)"></i>A · local</span><span><i style="background:var(--s2)"></i>B · API</span><span><i style="background:var(--s3)"></i>C · framework</span></div>
+
+  <div class="body" style="font-size:2.05vh">Read the three panels left to right and the winner changes each time. <b>B</b> is the most accurate and needs no machines of yours — and costs <b>₹9 lakh a month more than C</b> for +17.2 points. <b>A</b> is free in cash and costs you three machines running permanently. There is no winner, only a column you have chosen to optimise.</div>
   <div class="callout"><div class="box gotcha"><b>Gotcha — we made this exact mistake</b>We published <b>₹0.75/doc</b> from published per-token rates, then read the actual bill: <b>₹1.01</b>. Our token estimate was 43% low, so the cost was <b>26% low</b> — and at a million documents a month that is a <b>₹2.6 lakh/month</b> error. An estimate is not a measurement. Read the usage off the response.</div></div>
 </section>
 
