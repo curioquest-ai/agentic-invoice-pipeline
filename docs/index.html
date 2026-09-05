@@ -93,7 +93,89 @@
   .viz-key i { display:inline-block; width:1.2vh; height:1.2vh; border-radius:2px;
                margin-right:.45vw; vertical-align:-.05vh }
   .viz-key .rule { margin-left:auto; font-style:italic }
+  /* ── vertical balance, deck-wide ─────────────────────────────────────────
+     Every slide is a flex column with the callout pinned to the bottom
+     (.callout{margin-top:auto}), so ALL the slack collected in one hole between
+     the content and the callout -- 302px on the worst slide, 180-290px on
+     twenty of them. Two rules fix it for the whole deck:
+
+       1. Things that can genuinely USE height grow into it. A table given
+          height:100% distributes the extra across its rows, so the space comes
+          back as legible rows instead of a hole. Same trick as the bars on 25.
+       2. Things that cannot -- prose, code blocks, document images -- take auto
+          margins instead, so the slack is shared above and below them rather
+          than dumped underneath.
+
+     flex-shrink is 0 everywhere: a dense slide has no slack, so it is untouched.
+     Auto margins only claim free space once no item can grow, which is what
+     makes (1) beat (2) on slides that have both. */
+  .slide > .tw, .slide > table, .slide > .cols { flex:1 0 auto; }
+  .slide > .tw { display:flex; flex-direction:column; }
+  /* NOT height:100% -- on a flex item that resolves against the whole slide box
+     and overflowed eight slides by 235-501px. flex-grow gives the table a used
+     height instead, and a table taller than its content distributes the extra
+     across its own rows, which is the effect we wanted. */
+  .slide > .tw > table { flex:1 0 auto; }
+  /* a stretched row must not strand its text at the top of a tall cell */
+  .slide > .tw > table td, .slide > table td { vertical-align:middle; }
+  .slide > .cols > div { display:flex; flex-direction:column; justify-content:center; }
+  /* .body.big is a statement card, not a content block: centre the WHOLE stack
+     (kicker + title + statement) rather than pushing the prose away from its
+     own headline. .handsopen already centres, so it is excluded for the same
+     reason -- it was the one thing these rules made worse. */
+  .slide:has(> .body.big) { justify-content:center; }
+  .slide:not(.handsopen) > .body:not(.big), .slide:not(.handsopen) > pre,
+  .slide > .docband, .slide > .minicap { margin-top:auto; margin-bottom:auto; }
+  /* consecutive prose blocks must not each claim a share and drift apart */
+  .slide > .body + .body, .slide > .minicap + .docband,
+  .slide > .docband + .minicap, .slide > .minicap + pre { margin-top:0; }
+
+  /* ── the closing slide ───────────────────────────────────────────────────
+     Rides on .handsopen so the dark background and, more importantly, the print
+     overrides that flip dark slides to ink-on-paper both still apply -- but
+     .handsopen centres everything, and this slide is a left-aligned argument.
+     Every colour goes through a variable so @media print can restate the whole
+     palette in one place instead of fighting !important down the tree. */
+  .close { --c-lab:#8a8377; --c-said:#b8b2a4; --c-got:#faf8f4;
+           --c-hit:#e2703f; --c-rule:#3a3a3a; --c-card:#1e1c1a;
+           align-items:stretch; justify-content:flex-start; text-align:left; }
+  .close h1 { font-size:5vh; margin-bottom:2.4vh; max-width:none; }
+  .close .receipts { display:flex; gap:2vw; flex:0 1 auto; align-items:stretch; }
+  .close .rc { flex:1; min-width:0; display:flex; flex-direction:column;
+               justify-content:flex-start; gap:.9vh;
+               background:var(--c-card); border-top:3px solid var(--c-hit);
+               padding:2.4vh 1.3vw; }
+  .close .rlab { font-family:ui-monospace,monospace; font-size:1.4vh; font-weight:700;
+                 letter-spacing:.14em; text-transform:uppercase; color:var(--c-lab); }
+  .close .rsaid { font-size:2.6vh; line-height:1.4; color:var(--c-said);
+                  font-style:italic; margin:0 0 .6vh; min-height:2.8em; }
+  .close .rgot { font-size:2.35vh; line-height:1.45; color:var(--c-got); margin:0; }
+  .close .rgot b { color:var(--c-hit); }
+  .close .verdict { font-size:2.5vh; line-height:1.5; color:var(--c-said);
+                    max-width:none; margin:2.4vh 0 0; }
+  .close .verdict:first-of-type { margin-top:auto; }   /* one beat, not three */
+  .close .verdict b { color:var(--c-got); }
+  .close code { background:#2a2a2a; color:var(--c-got); }
+  .close .mantra { font-size:4.4vh; line-height:1.25; font-weight:700;
+                   color:var(--c-got); margin:1.8vh 0 .8vh; }
+  .close .sig { font-family:ui-monospace,monospace; font-size:1.6vh; color:var(--c-lab);
+                margin-top:1.6vh; display:flex; justify-content:space-between;
+                align-items:baseline; gap:2vw; border-top:1px solid var(--c-rule);
+                padding-top:1.2vh; }
+  .close .sig b { color:var(--c-hit); font-size:2vh; letter-spacing:.02em; }
+  /* A 4:3 projector is narrower, so the cards wrap an extra line and the slide
+     overflowed by 16px at 1024x768. Venues still have these. */
+  @media (max-aspect-ratio:1.4/1) {
+    .close .rsaid { font-size:2.35vh; }
+    .close .rgot  { font-size:2.1vh; }
+    .close .verdict { font-size:2.3vh; }
+    .close .mantra  { font-size:3.9vh; }
+  }
+
   @media print {
+    .close { --c-lab:#666; --c-said:#4a4a4a; --c-got:#141414;
+             --c-hit:var(--accent); --c-rule:#c9c2b6; --c-card:#f2ede3; }
+    .close code { background:#efe9dd !important; color:#141414 !important; }
     .slide { display:flex !important; height:auto; min-height:100vh; page-break-after:always; overflow:visible; }
     .footer { display:none; }
     /* Browsers drop backgrounds when printing, which would leave the four
@@ -167,7 +249,7 @@
 <section class="slide">
   <div class="kicker">Framing</div>
   <h1>Demo AI fails in enterprises because nobody can measure it</h1>
-  <div class="body">
+  <div class="body" style="font-size:3vh">
     <ul>
       <li>A demo needs one document to work once. A pipeline needs 10,000 documents to work <i>measurably</i> — including the mistyped, the truncated, and the mathematically wrong ones.</li>
       <li>The gap between the two isn't a better model. It's ground truth, an eval, and validators — everything we build before and after the model call.</li>
@@ -362,7 +444,7 @@
 <section class="slide">
   <div class="kicker">M3 · Parser</div>
   <h1>Extraction transcribes; validation judges — never let the model do both</h1>
-  <pre>LLM (temperature 0):  "copy what is printed, verbatim, even the mistakes"
+  <pre style="font-size:2.15vh;line-height:1.85">LLM (temperature 0):  "copy what is printed, verbatim, even the mistakes"
         │
         ▼  Invoice (Pydantic)
 validators.py (code):  GSTIN mod-36 checksum · Σitems + CGST + SGST ≈ total
@@ -513,7 +595,7 @@ consistent: true ✓</pre></div>
 <section class="slide">
   <div class="kicker">M4 · Eval</div>
   <h1>Normalize before you compare, or you'll fail correct answers</h1>
-  <div class="body">
+  <div class="tw">
     <table>
       <tr><th>Ground truth</th><th>Parser said</th><th>Exact</th><th>Normalized</th></tr>
       <tr><td>1,82,336.22 (printed)</td><td><code>182336.22</code></td><td>✗</td><td>✓</td></tr>
@@ -570,7 +652,7 @@ consistent: true ✓</pre></div>
 <section class="slide">
   <div class="kicker">M5 · Synthesis</div>
   <h1>Production is mostly the broken 8%: retries, audit, human-in-loop</h1>
-  <div class="body">What today's pipeline doesn't have — and a production one must:
+  <div class="body" style="font-size:2.75vh">What today's pipeline doesn't have — and a production one must:
     <ul>
       <li><b>Queues + retries</b> — one flaky call must not drop an invoice</li>
       <li><b>Batch-level dedup</b> — duplicate invoice_no is a cross-doc check; today's validators are per-doc (we planted dupes; did anyone catch them?)</li>
@@ -584,10 +666,33 @@ consistent: true ✓</pre></div>
 </section>
 
 <!-- 27 · The harness is the asset; the parser is disp -->
-<section class="slide handsopen">
+<section class="slide handsopen close">
   <div class="kicker">Close</div>
-  <h1>The harness is the asset; the parser is disposable</h1>
-  <p class="body big">Models change quarterly. Your dataset + ground truth + eval don't.<br><br>Swap any new model into this harness next month and know in 10 minutes — not 10 meetings — whether it's better.<br><br><span class="num">Truth first. Chaos on purpose. Grade everything.</span><br><br><span style="font-size:2.2vh;color:#b8b2a4">Priyank Mehta · SaarthiOS · thank you, Bengaluru</span></p>
+  <h1>Three things we were sure of. All three were wrong.</h1>
+  <div class="receipts">
+    <div class="rc">
+      <div class="rlab">We assumed</div>
+      <p class="rsaid">"Paid buys the stronger guarantee."</p>
+      <div class="rlab">The run said</div>
+      <p class="rgot"><b>The free, local track has the strongest one.</b> <code>format=</code> is constrained decoding — the tokens <i>cannot</i> leave your schema. A forced tool call guarantees a block, not that its contents validate.</p>
+    </div>
+    <div class="rc">
+      <div class="rlab">We assumed</div>
+      <p class="rsaid">"LlamaParse is overkill on born-digital PDFs."</p>
+      <div class="rlab">The run said</div>
+      <p class="rgot"><b>+9.9 points</b> over pdfplumber with the identical model in stage 2 — winning <b>every line-item field</b>. Not text fidelity: <b>structure</b>. Give a small model a table and it stops guessing.</p>
+    </div>
+    <div class="rc">
+      <div class="rlab">We assumed</div>
+      <p class="rsaid">"₹0.75 a document — we did the token math."</p>
+      <div class="rlab">The run said</div>
+      <p class="rgot"><b>₹1.01.</b> The estimate was <b>26% low</b>, because we were 43% off on tokens. At a million documents a month that gap is <b>₹2.6 lakh</b> — every month.</p>
+    </div>
+  </div>
+  <p class="verdict">None of those was a careless guess. Each was a reasonable, experienced prediction — and each one survived right up to the moment a hundred documents and a scorer disagreed with it. <b>You cannot argue your way to any of these numbers.</b></p>
+  <div class="mantra">The harness is the asset. The parser is disposable.</div>
+  <p class="verdict" style="margin-top:0">Models change quarterly; your dataset, your ground truth and your eval do not. Swap next quarter's model into this harness and know in <b>ten minutes, not ten meetings</b>.</p>
+  <div class="sig"><b>Truth first. Chaos on purpose. Grade everything.</b><span>thank you, Bengaluru</span></div>
 </section>
 
 <div class="footer">Priyank Mehta · SaarthiOS · <span id="pg"></span> · ←/→ · P print</div>
