@@ -151,14 +151,10 @@ footer{margin-top:70px;padding-top:22px;border-top:1px solid var(--rule);
   out what a framework buys you, and what it charges.</p>
 </header>
 
-<div class="panel check"><span class="lab">Half of this track is now verified</span>
-    <b>Stage 2 really runs.</b> On 5 Sep we installed the packages and put a real dataset PDF
-    through <code>structured_predict</code> on a local model: it returned a valid
-    <code>Invoice</code> in <b>5.5 seconds</b> on an 8 GB M2. The code you are about to run has
-    executed.
-    <br><br><b>Stage 1 has not.</b> We had no LlamaCloud key, so every claim about LlamaParse
-    here comes from its documentation. <b>Start at <code>--limit 1</code></b> and read the error
-    on the <i>first</i> row rather than the wall of them.</div>
+<div class="panel check"><span class="lab">This track has now been run end to end</span>
+    All 100 documents, both stages, zero errors — <b>82.8%</b> at <b>23.5 s/doc</b> on an
+    8 GB M2. Every number on this page is measured, not quoted from documentation.
+    <br><br>Still start at <code>--limit 1</code>: your install and your key are not ours.</div>
 
 <div class="blockhead"><span class="t">Why</span><h2>The two-stage pattern</h2></div>
 <p class="blockintro">This is the shape most real document pipelines end up in, and it is worth
@@ -175,14 +171,20 @@ seeing even if you would not choose it today.</p>
   40-page contract. <b>Stage 2</b> is plain text extraction against the same
   <code>schema.Invoice</code> every other track uses. The framework buys you stage 1. It is
   genuinely the part you would not want to build.</p>
-  <div class="panel why"><span class="lab">Now the honest half — say this at demo time</span>
-    For <b>today's</b> documents this is arguably overkill. Our PDFs are born-digital, so the
-    text layer is already perfect and <code>pdfplumber</code> reads it for <b>free</b> — that
-    is gotcha <b>G4</b>, and Track A proves it at <b>8 s/doc for ₹0</b>. Stage 1 earns its keep
-    on documents you <i>cannot</i> read for free.
-    <br><br>The price is three unpinned packages, no version floors, and a model lookup that
-    happens <i>inside</i> the framework before a single request is sent. <b>You pay the
-    framework tax before you extract one field.</b> Open your cost column when you say it.</div>
+  <div class="panel why"><span class="lab">We expected this to be overkill here. It is not — and the numbers say why</span>
+    Same 100 documents, same schema, same validators, same scorer, and the <b>same local model</b>
+    in stage 2 — so the only variable is LlamaParse vs <code>pdfplumber</code>:
+    <br><br><b>Track A 72.9% &nbsp;→&nbsp; Track C 82.8%</b>, and C wins <b>every line-item
+    field</b>: rate <b>+24</b>, amount <b>+15</b>, HSN <b>+15</b>, description <b>+12</b>,
+    qty <b>+7</b>. It loses only on <code>total</code> (−8).
+    <br><br>This is not about text fidelity — <code>pdfplumber</code> reads the characters
+    perfectly. It is about <b>structure</b>. LlamaParse hands the model a markdown <i>table</i>
+    with named columns; <code>pdfplumber</code> hands it a flat run of numbers the model has to
+    segment itself. Give a small model a table and it stops guessing which number is the rate
+    and which is the amount.
+    <br><br>The price is real: <b>3× the latency</b> (23.5 s vs 8.2 s), a LlamaParse page per
+    document, a ~180 MB install, and three unpinned packages. Whether +9.9 points is worth that
+    is now a decision you can make with numbers instead of taste.</div>
 </div>
 
 <div class="blockhead"><span class="t">Before</span><h2>Install — at home, not at the venue</h2></div>
@@ -302,8 +304,8 @@ python eval.py --outputs ../03-parser/outputs_track_c.jsonl \
 <footer>
 Track C · <code>03-parser/track_c_llamaindex.py</code> · needs <code>LLAMA_CLOUD_API_KEY</code>
 only — stage 2 runs locally by default (<code>--llm anthropic</code> for the paid path) — plus
-an install that is not in the default setup. Corrected from the provider docs during the
-pre-flight; never executed.
+an install that is not in the default setup. <b>Run end to end over 100 documents on 5 Sep:
+82.8%, 23.5 s/doc, zero errors.</b>
 </footer>
 
 </div>

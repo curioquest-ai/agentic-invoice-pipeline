@@ -429,7 +429,7 @@ python track_c_llamaindex.py --limit 5</pre>
 
   <p><b>Track C — the framework.</b> Two stages: LlamaParse turns any document — scans, rotated tables, a 40-page contract — into clean markdown, then stage 2 extracts against the same <code>Invoice</code> schema.</p>
   <div class="panel why"><span class="lab">And be honest about the trade</span>
-    For <i>today's</i> invoices this is arguably overkill — our PDFs are born-digital, so <code>pdfplumber</code> already reads a perfect text layer for free (that is G4, and Track A proves it at 8 s/doc for ₹0). Stage 1 earns its keep on documents you cannot read for free. The cost is three unpinned packages and a model lookup that happens <i>inside the framework</i> before any request is sent. <b>The framework buys you stage 1; the schema and validators stay yours.</b></div>
+    We expected this to be overkill on born-digital PDFs. <b>Measured over 100 documents with the same local model in stage 2, Track C beat Track A 82.8% to 72.9%</b> — winning <i>every</i> line-item field (rate +24, amount +15, HSN +15). Not text fidelity — <b>structure</b>: a markdown table with named columns beats a flat run of numbers. The price is 3× the latency (23.5 s vs 8.2 s) plus a LlamaParse page per document. <b>The framework buys you stage 1; the schema and validators stay yours.</b></div>
 
   <div class="panel check"><span class="lab">What Track B costs — estimated, not measured</span>
     At Sonnet 5's published $2 / $10 per million tokens, one of our one-page invoices is roughly 2,500 input + 350 output tokens ≈ <b>$0.0085 ≈ ₹0.75/doc</b>. So <b>≈ ₹75</b> for today's hundred — and <b>≈ ₹7.5 lakh</b> at a million documents a month. That second number is a headcount.

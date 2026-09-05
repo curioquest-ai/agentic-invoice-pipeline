@@ -399,3 +399,40 @@ the attendee's own machine and volume. Net zero on the clock, lecture upgraded t
 scope §04 gains a `prediction` field as its first question, setup prerequisites row, added to
 the "Keep" table) · `slides/index.html` (new slide 7, between the idea library and the data
 factory).
+
+---
+
+## 11 · Track C, run end to end (5 Sep, after the rehearsal)
+
+Installed the framework packages (~180 MB), added a LlamaCloud key, ran all 100 documents
+through both stages. **Zero errors, 40 minutes, 23.8 s/doc.**
+
+**It overturned a claim I had written into four files.** I had said LlamaParse was "arguably
+overkill" on born-digital PDFs, reasoning from gotcha G4. Same 100 documents, same schema,
+same validators, same scorer, and the *same local model* in stage 2 — so the only variable is
+LlamaParse markdown vs `pdfplumber` raw text:
+
+| | Track A | Track C | |
+|---|---:|---:|---|
+| headline | 72.9% | **82.8%** | **+9.9** |
+| `item.rate` | 59% | **83%** | +24 |
+| `item.amount` | 67% | **82%** | +15 |
+| `item.hsn` | 25% | **40%** | +15 |
+| `item.description` | 88% | **100%** | +12 |
+| `item.qty` | 92% | **99%** | +7 |
+| `total` | **80%** | 72% | −8 |
+| p50 latency | **8.2 s** | 23.5 s | 3× slower |
+
+Every line-item field improves; only scalars are a wash. The cause is **structure, not text
+fidelity** — `pdfplumber` reads the characters perfectly but hands the model a flat run of
+numbers to segment. LlamaParse hands it a table with named columns.
+
+Two caveats, stated because they cut against the result: Track A's number comes from its
+improved v3 prompt while Track C ran the base prompt, so C won with the *weaker* prompt; and
+23.5 s/doc plus a LlamaParse page per document is a real cost.
+
+G4 itself stands — we are not comparing against OCR. What was wrong was extending it into
+"therefore a document-conversion stage is pointless here."
+
+Corrected in `03-parser/track_c_llamaindex.py`, `03-parser/README.md`,
+`docs/Workshop-Steps-TrackC.html` and `docs/index.html`.

@@ -1,11 +1,11 @@
 """Track C -- framework path. PDF -> LlamaParse (markdown) -> LLM extraction.
 
-!! HALF VERIFIED, 2026-09-05.
-!! STAGE 2 (Ollama -> structured_predict -> Invoice) HAS been run: it returns a
-!!   valid Invoice from a real dataset PDF in ~5.5s on an 8 GB M2.
-!! STAGE 1 (LlamaParse) has NOT been run -- we had no LlamaCloud key. Everything
-!!   about it here comes from the docs, not from a green test.
-!! The install is also not in the default setup: the llama-index lines in
+!! RUN END TO END, 2026-09-05: 100 documents, both stages, zero errors.
+!!   82.8% normalised accuracy at 23.5s/doc on an 8 GB M2.
+!! Track A on the identical 100 documents, with the SAME local model in stage 2,
+!!   scored 72.9% at 8.2s/doc. So the only variable -- LlamaParse markdown vs
+!!   pdfplumber raw text -- is worth +9.9 points and costs 3x the latency.
+!! The install is not in the default setup: the llama-index lines in
 !!   requirements.txt are commented out on purpose (it adds ~180 MB).
 
 Run:  pip install llama-cloud-services llama-index-core llama-index-llms-ollama
@@ -59,12 +59,24 @@ Track A on identical hardware, look here before you blame LlamaParse.
 What this track teaches that A and B don't: the two-stage enterprise pattern.
 Stage 1 (LlamaParse) turns ANY document -- scans, tables, 40-page contracts --
 into clean markdown. Stage 2 is plain text extraction against our schema.
-For today's one-page invoices it is arguably overkill -- our PDFs are
-born-digital, so pdfplumber already reads a perfect text layer for free (that is
-gotcha G4, and Track A proves it at 8 s/doc). Say that out loud at demo time,
-with your cost column open. For real document variety -- scans, rotated tables,
-handwriting -- stage 1 is the part you would not want to build. The framework
-buys you stage 1; the schema and validators are still yours.
+We expected this to be overkill for one-page born-digital invoices, and we were
+WRONG. Measured over 100 documents with the SAME local model in stage 2:
+
+    Track A (pdfplumber)  72.9%   8.2s/doc
+    Track C (LlamaParse)  82.8%  23.5s/doc    +9.9 points, 3x slower
+
+C wins EVERY line-item field -- rate +24, amount +15, hsn +15, description +12,
+qty +7 -- and loses only on total (-8). The cause is not text fidelity;
+pdfplumber reads the characters perfectly. It is STRUCTURE. LlamaParse hands the
+model a markdown table with named columns, pdfplumber hands it a flat run of
+numbers the model must segment itself. Give a small model a table and it stops
+guessing which number is the rate and which is the amount.
+
+This does not refute gotcha G4 -- we are not comparing against OCR, and
+pdfplumber still beats rasterising a born-digital page. What was wrong was
+extending G4 into "so a document-conversion stage is pointless here".
+
+The framework buys you stage 1; the schema and validators are still yours.
 """
 from __future__ import annotations
 

@@ -4,7 +4,7 @@
 |---|---|---|---|
 | **A** free/local | `python track_a_local.py --limit 5` | `ollama pull qwen2.5vl:7b` (at home!) | **run end to end, measured** |
 | **B** paid API | `python track_b_api.py --limit 5` | `ANTHROPIC_API_KEY` in `.env` | corrected, **never executed** |
-| **C** framework | `python track_c_llamaindex.py --limit 5` | `LLAMA_CLOUD_API_KEY` in `.env` + a ~180 MB install. Stage 2 is local by default — no second key | **stage 2 verified**, stage 1 never run |
+| **C** framework | `python track_c_llamaindex.py --limit 5` | `LLAMA_CLOUD_API_KEY` in `.env` + a ~180 MB install. Stage 2 is local by default — no second key | **run end to end, measured: 82.8%** |
 
 Always smoke-test with `--limit 5` before spending time or money on 100.
 All three emit the same `schema.Invoice` and the same `validators.validate()` flags —
@@ -13,11 +13,9 @@ different schemas = incomparable scores = no leaderboard.
 All three take `--model` now, so you can swap models without editing source. That swap,
 followed by a re-run of the same eval, *is* the workshop.
 
-> **Honesty note.** Track A was run end to end many times and every number quoted for it is
-> measured. **Track B has never been executed** — no key. **Track C is half verified**: stage 2
-> (Ollama → `structured_predict` → `Invoice`) really does run and returns a valid Invoice in
-> ~5.5 s on an 8 GB M2; stage 1 (LlamaParse) has never run because we had no LlamaCloud key.
-> Smoke-test at `--limit 1` regardless.
+> **Honesty note.** Tracks **A and C** were both run end to end over all 100 documents and
+> every number quoted for them is measured. **Track B has never been executed** — no Anthropic
+> key. Smoke-test at `--limit 1` regardless.
 
 ---
 
@@ -54,16 +52,44 @@ your schema. The parameter that guarantees validation is `strict: true`, and str
 
 **Structured output removes a class of parsing bugs. It does not remove your validation layer.**
 
-### C · framework — *the two-stage pattern, and what a framework costs*
+### C · framework — *the two-stage pattern, and what it actually buys*
 LlamaParse → markdown → LlamaIndex `structured_predict` against the same `Invoice`.
 
 Stage 1 turns *any* document — scans, rotated tables, a 40-page contract — into clean
 markdown. Stage 2 is plain text extraction. For real document variety, stage 1 is the part
-you would not want to build yourself, and that is what the framework buys you.
+you would not want to build yourself.
 
-For **today's** invoices it is arguably overkill, and you should say so at demo time: our PDFs
-are born-digital, so `pdfplumber` already reads a perfect text layer for free. That is gotcha
-**G4**, and Track A proves it at 8 s/doc and ₹0.
+**We expected this to be overkill on born-digital PDFs. We were wrong, and we have the
+numbers.** Same 100 documents, same schema, same validators, same scorer, and the *same local
+model* in stage 2 — so the only variable is LlamaParse vs `pdfplumber`:
+
+| | Track A | Track C | |
+|---|---:|---:|---|
+| **headline** | 72.9% | **82.8%** | **+9.9** |
+| `item.rate` | 59% | **83%** | +24 |
+| `item.amount` | 67% | **82%** | +15 |
+| `item.hsn` | 25% | **40%** | +15 |
+| `item.description` | 88% | **100%** | +12 |
+| `item.qty` | 92% | **99%** | +7 |
+| `total` | **80%** | 72% | −8 |
+| p50 latency | **8.2 s** | 23.5 s | ~3× slower |
+
+**Every line-item field improves; only the scalars are a wash.** That is the whole finding, and
+it is not about text fidelity — `pdfplumber` reads the characters perfectly. It is about
+**structure**: LlamaParse hands the model a markdown *table* with named columns, while
+`pdfplumber` hands it a flat run of numbers the model has to segment itself. Give a small model
+a table and it stops guessing which number is the rate and which is the amount.
+
+Note gotcha **G4** is untouched by this — we are not comparing against OCR, and `pdfplumber`
+still beats rasterising a born-digital page. What was wrong was the *extension* of G4 into
+"therefore a document-conversion stage is pointless here."
+
+One caveat, stated because it cuts against us: Track A's number comes from its improved v3
+prompt, while Track C ran the base `EXTRACTION_PROMPT`. C won with the weaker prompt.
+
+The cost is real: **3× the latency**, a LlamaParse page per document, a ~180 MB install, and
+three unpinned packages. Whether +9.9 points is worth that is a decision you can now make with
+numbers instead of taste — which is the entire point of the day.
 
 **Stage 2 defaults to your local Ollama model**, so this track needs one key, not two — and
 that default is the point. Keep stage 2 identical to Track A and the only variable left is

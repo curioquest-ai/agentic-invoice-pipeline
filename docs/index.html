@@ -312,7 +312,7 @@
     <tr><th>Track</th><th>Stack</th><th>Cost</th><th>Pick it if</th></tr>
     <tr><td>A · free/local</td><td><b>vision:</b> PNG → Qwen2.5-VL via Ollama<br><b>text:</b> pdfplumber → llama3.2:3b</td><td>₹0 · vision needs <b>16 GB</b> (8 GB free)<br>text path runs on 8 GB</td><td>No API keys, wants control</td></tr>
     <tr><td>B · paid API</td><td>PDF → Claude, <b>forced tool-call</b></td><td>~₹0.75/doc <i>est.</i><br>≈₹75 today · ₹7.5L at 1M/mo</td><td>Wants structured output done properly</td></tr>
-    <tr><td>C · framework</td><td>LlamaParse → markdown → LlamaIndex <code>structured_predict</code></td><td>free tier + B's rate for stage 2</td><td>Wants the 2-stage pattern for documents you <i>cannot</i> read for free</td></tr>
+    <tr><td>C · framework</td><td>LlamaParse → markdown → LlamaIndex <code>structured_predict</code></td><td>₹0 — free tier + a local stage 2</td><td>Wants the best line-item accuracy we measured: <b>82.8%</b></td></tr>
   </table>
   <div class="body">All three emit the same Pydantic <code>Invoice</code>. Different schemas = incomparable scores = no leaderboard = four disconnected demos. <b>Track A is measured; B and C were corrected from the docs but never executed — smoke-test at <code>--limit 1</code>.</b></div>
   <div class="callout"><div class="box gotcha"><b>Gotcha</b>On an 8 GB laptop the vision path is not slow, it is <b>unusable</b> — the 7b will not fit a 4.8 GiB Metal budget and a 3b runs at <b>0.29 tok/s</b>, ~30 min per document. These invoices are born-digital, so the text layer is perfect and <code>pdfplumber</code> beats vision outright: <b>8 s/doc</b>, measured. Check what you are handing the model before you download 6 GB.</div></div>
@@ -355,7 +355,7 @@ validators.py (code):  GSTIN mod-36 checksum · Σitems + CGST + SGST ≈ total
   </div>
   <div class="callout">
     <div class="box learn"><b>Key learning</b>Forced tool-choice guarantees a <i>tool_use block</i> — not that it validates. That needs <code>strict:true</code>, which needs <code>additionalProperties:false</code>, which Pydantic does not emit. <b>Structured output removes a class of parsing bugs. It does not remove your validation layer.</b></div>
-    <div class="box gotcha"><b>Gotcha</b>Track C on <i>today's</i> invoices is arguably overkill — ours are born-digital, so <code>pdfplumber</code> reads a perfect text layer for free (G4, and Track A proves it at 8 s/doc for ₹0). The framework's cost is three unpinned packages and a model lookup that fails <i>before</i> any request. Say that out loud with your cost column open.</div>
+    <div class="box gotcha"><b>Gotcha — we got this wrong, and measured it</b>We expected LlamaParse to be overkill on born-digital PDFs. Over 100 documents, same model in stage 2, <b>Track C beat Track A 82.8% to 72.9%</b> — winning <b>every line-item field</b> (rate +24, amount +15, HSN +15). Not text fidelity: <b>structure</b>. A markdown table with named columns beats a flat run of numbers. The price is 3× the latency. Now you can argue about it with numbers.</div>
   </div>
 </section>
 
