@@ -126,7 +126,7 @@
       <td><b>1 · What reads<br>the document</b></td>
       <td>the model's own eyes (PNG),<br>or <code>pdfplumber</code> on the text layer</td>
       <td>Claude reads the PDF natively</td>
-      <td><b>two stages:</b> LlamaParse → markdown,<br><i>then</i> a model</td>
+      <td><b>two stages:</b> LlamaParse → markdown,<br><i>then</i> <code>llama3.2:3b</code> — <b>A's own model</b></td>
     </tr>
     <tr>
       <td><b>2 · How the answer is<br>forced into your schema</b></td>
@@ -142,7 +142,7 @@
     </tr>
   </table></div>
   <div class="callout">
-    <div class="box learn"><b>Key learning</b>Everything else is <b>held constant on purpose</b>: one schema, one prompt, one set of validators, one scorer. Only those three rows change. That is the difference between <b>an experiment</b> and three disconnected demos — and it is why the 15:45 leaderboard means anything at all.</div>
+    <div class="box learn"><b>Key learning</b>Everything else is <b>held constant on purpose</b>: one schema, one prompt, one set of validators, one scorer. Only those three rows change. That is the difference between <b>an experiment</b> and three disconnected demos — and it is why the 15:45 leaderboard means anything at all. It is also why <b>C runs A's exact stage-2 model</b>: hold the model constant and the only thing left between them is <b>LlamaParse markdown vs pdfplumber text</b>.</div>
   </div>
 </section>
 
@@ -389,13 +389,13 @@ validators.py (code):  GSTIN mod-36 checksum · Σitems + CGST + SGST ≈ total
       <pre>PDF ──► LlamaParse ──► markdown
                           │
                           ▼
-              extract against Invoice</pre>
-      <div class="body" style="font-size:2.05vh">Stage 1 turns <b>any</b> document — scans, rotated tables, a 40-page contract — into clean markdown. Stage 2 is plain extraction. The framework buys you stage 1.</div>
+        llama3.2:3b ──► Invoice</pre>
+      <div class="body" style="font-size:2.05vh">Stage 1 turns <b>any</b> document — scans, rotated tables, a 40-page contract — into clean markdown. Stage 2 is plain extraction — deliberately <b>A's exact model</b>, so LlamaParse is the only variable. The framework buys you stage 1.</div>
     </div>
   </div>
   <div class="callout">
     <div class="box learn"><b>Key learning</b>Forced tool-choice guarantees a <i>tool_use block</i> — not that it validates. That needs <code>strict:true</code>, which needs <code>additionalProperties:false</code>, which Pydantic does not emit. <b>Structured output removes a class of parsing bugs. It does not remove your validation layer.</b></div>
-    <div class="box gotcha"><b>Gotcha — we got this wrong, and measured it</b>We expected LlamaParse to be overkill on born-digital PDFs. Over 100 documents, same model in stage 2, <b>Track C beat Track A 82.8% to 72.9%</b> — winning <b>every line-item field</b> (rate +24, amount +15, HSN +15). Not text fidelity: <b>structure</b>. A markdown table with named columns beats a flat run of numbers. The price is 3× the latency. Now you can argue about it with numbers.</div>
+    <div class="box gotcha"><b>Gotcha — we got this wrong, and measured it</b>We expected LlamaParse to be overkill on born-digital PDFs. Over 100 documents, <b>the same <code>llama3.2:3b</code> in stage 2</b>, <b>Track C beat Track A 82.8% to 72.9%</b> — winning <b>every line-item field</b> (rate +24, amount +15, HSN +15). Not text fidelity: <b>structure</b>. A markdown table with named columns beats a flat run of numbers. The price is 3× the latency. Now you can argue about it with numbers.</div>
   </div>
 </section>
 
