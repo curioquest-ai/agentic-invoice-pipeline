@@ -420,7 +420,7 @@ python track_c_llamaindex.py --limit 5</pre>
     <b>B: an unexplained <code>ValidationError</code> on a long invoice</b> — that is <code>max_tokens</code> truncation, not a schema problem. Raise <code>TRACK_B_MAX_TOKENS</code>.<br>
     <b>C: <code>ModuleNotFoundError: llama_cloud_services</code></b> — the llama-index lines in <code>requirements.txt</code> are commented out on purpose. Uncomment and <code>pip install</code> — <b>at home</b>, it is a heavy install.<br>
     <b>C: it raises inside <code>Anthropic(...)</code> before any network call</b> — llama-index keeps its own model registry. Upgrade <code>llama-index-llms-anthropic</code>, or pass <code>--model</code> with an id it knows.<br>
-    <b>C: missing <code>LLAMA_CLOUD_API_KEY</code></b> — C needs <i>two</i> keys: LlamaParse and the extraction model.</div>
+    <b>C: missing <code>LLAMA_CLOUD_API_KEY</code></b> — stage 1 needs it. Stage 2 runs on your local model by default, so there is no second key.</div>
 </div>
 
 <div class="step">

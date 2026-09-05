@@ -216,7 +216,7 @@ $EDITOR .env            # every key is documented inline, per track
 | Track | Key(s) in `.env` | Then run |
 |---|---|---|
 | **B** paid API | `ANTHROPIC_API_KEY` | `python 03-parser/track_b_api.py --limit 5` |
-| **C** framework | `LLAMA_CLOUD_API_KEY` (+ `ANTHROPIC_API_KEY`) | `python 03-parser/track_c_llamaindex.py --limit 5` |
+| **C** framework | `LLAMA_CLOUD_API_KEY` only — stage 2 runs on your local Ollama model | `python 03-parser/track_c_llamaindex.py --limit 5` |
 
 `.env` is gitignored and auto-loaded by the parser scripts. Always smoke-test
 with `--limit 5` before spending money on 100 docs. Same eval command grades

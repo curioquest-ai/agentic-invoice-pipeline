@@ -4,7 +4,7 @@
 |---|---|---|---|
 | **A** free/local | `python track_a_local.py --limit 5` | `ollama pull qwen2.5vl:7b` (at home!) | **run end to end, measured** |
 | **B** paid API | `python track_b_api.py --limit 5` | `ANTHROPIC_API_KEY` in `.env` | corrected, **never executed** |
-| **C** framework | `python track_c_llamaindex.py --limit 5` | `LLAMA_CLOUD_API_KEY` in `.env` + a heavy install | corrected, **never executed** |
+| **C** framework | `python track_c_llamaindex.py --limit 5` | `LLAMA_CLOUD_API_KEY` in `.env` + a heavy install. Stage 2 is local by default — no second key | corrected, **never executed** |
 
 Always smoke-test with `--limit 5` before spending time or money on 100.
 All three emit the same `schema.Invoice` and the same `validators.validate()` flags —
@@ -63,10 +63,19 @@ For **today's** invoices it is arguably overkill, and you should say so at demo 
 are born-digital, so `pdfplumber` already reads a perfect text layer for free. That is gotcha
 **G4**, and Track A proves it at 8 s/doc and ₹0.
 
+**Stage 2 defaults to your local Ollama model**, so this track needs one key, not two — and
+that default is the point. Keep stage 2 identical to Track A and the only variable left is
+LlamaParse vs `pdfplumber`, which is the question Track C exists to answer. Bolt a paid API
+onto stage 2 and you have mixed in Track B's question and can no longer tell which stage moved
+your score. `TRACK_C_LLM=anthropic` if you want the paid path anyway.
+
 The cost side is the other half of the lesson: three unpinned packages, no version floors, and
 a model-id lookup that happens inside the framework before any request is sent. You pay the
-framework tax before you extract a single field. **The framework buys you stage 1; the schema
-and the validators stay yours.**
+framework tax before you extract a single field. And note what the abstraction takes away:
+Track A hands Ollama the JSON schema via `format=` — constrained decoding, where the tokens
+*cannot* leave the schema — while `structured_predict` gives you the framework's own handling
+instead. Same model, same schema, weaker guarantee. **The framework buys you stage 1; the
+schema and the validators stay yours.**
 
 ---
 
@@ -107,7 +116,7 @@ them into each JSONL row, and sum. It is about six lines.
 | B | Unexplained `ValidationError` on a long invoice | `max_tokens` truncation. `parse_one` now names this explicitly; raise `TRACK_B_MAX_TOKENS` |
 | C | `ModuleNotFoundError: llama_cloud_services` | the llama-index lines in `requirements.txt` are commented out on purpose. Uncomment, `pip install`, **at home** |
 | C | Raises inside `Anthropic(...)` before any network call | llama-index keeps its own model→context-window registry. Upgrade `llama-index-llms-anthropic`, or `--model` an id it knows |
-| C | `LLAMA_CLOUD_API_KEY` missing | both keys are needed — LlamaParse *and* the extraction LLM |
+| C | `LLAMA_CLOUD_API_KEY` missing | stage 1 needs it. Stage 2 does not need a key unless you set `TRACK_C_LLM=anthropic` |
 
 **A 400 does not look like a crash.** `common._with_retry` retries once, `run_track` catches
 per document, and you get a complete 100-row output file with zero fields and a 0% leaderboard

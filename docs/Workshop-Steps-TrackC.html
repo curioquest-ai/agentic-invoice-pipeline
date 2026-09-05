@@ -147,7 +147,8 @@ footer{margin-top:70px;padding-top:22px;border-top:1px solid var(--rule);
 <header>
   <h1>Track C — the framework</h1>
   <p class="dek">LlamaParse turns any document into markdown; then you extract against the same
-  schema. You are here to find out what a framework buys you, and what it charges.</p>
+  schema — on your own machine, so this track needs one key and costs ₹0. You are here to find
+  out what a framework buys you, and what it charges.</p>
 </header>
 
 <div class="panel warn"><span class="lab">Read this before you start</span>
@@ -192,20 +193,29 @@ seeing even if you would not choose it today.</p>
   <pre># requirements.txt — remove the leading '#' from these three
 llama-cloud-services
 llama-index-core
-llama-index-llms-anthropic
+llama-index-llms-ollama          # stage 2, local, no key
 
 pip install -r requirements.txt</pre>
+  <p>Only add <code>llama-index-llms-anthropic</code> if you deliberately want the paid stage 2.</p>
   <div class="panel check"><span class="lab">Check it worked</span>
     <pre>python -c "import llama_cloud_services, llama_index.core; print('ok')"</pre></div>
 </div>
 
 <div class="step">
   <span class="stepno">Step C2</span>
-  <h3>Two keys, not one</h3>
-  <pre>echo 'LLAMA_CLOUD_API_KEY=llx-...'   &gt;&gt; .env   # stage 1, LlamaParse
-echo 'ANTHROPIC_API_KEY=sk-ant-...'  &gt;&gt; .env   # stage 2, extraction</pre>
-  <p>Free LlamaParse tier at <b>cloud.llamaindex.ai</b> covers today. Stage 2 costs the same as
-  Track B, because it is the same model.</p>
+  <h3>One key — stage 2 runs on your own machine</h3>
+  <pre>echo 'LLAMA_CLOUD_API_KEY=llx-...' &gt;&gt; .env   # stage 1 only</pre>
+  <p>Free LlamaParse tier at <b>cloud.llamaindex.ai</b> covers today's hundred pages. Stage 2
+  defaults to the same local Ollama model Track A already pulled, so this track costs <b>₹0</b>
+  and needs no LLM key at all.</p>
+  <div class="panel why"><span class="lab">Why local is the right default here</span>
+    Track C exists to answer <b>one</b> question: what does the framework's document-conversion
+    stage buy me? Keep stage 2 identical to Track A — same model, same schema, same eval — and
+    the only variable left is <b>LlamaParse vs pdfplumber</b>. That is a clean experiment.
+    <br><br>Bolt a paid API onto stage 2 and you have quietly mixed in Track B's question: when
+    your score moves you cannot say whether stage 1 or stage 2 did it. Want the paid path
+    anyway? <code>pip install llama-index-llms-anthropic</code> then
+    <code>python track_c_llamaindex.py --llm anthropic --limit 5</code>.</div>
 </div>
 
 <div class="blockhead"><span class="t">14:00</span><h2>Run it</h2><span class="dur">60 min</span></div>
@@ -223,8 +233,9 @@ python track_c_llamaindex.py --dataset ../02-generator/dataset --limit 1</pre>
     construction. A release older than the model you name raises right there. Fix: upgrade
     <code>llama-index-llms-anthropic</code>, or name one it knows:
     <code>python track_c_llamaindex.py --model &lt;an id your version knows&gt; --limit 1</code><br>
-    <b>3 · Credentials.</b> Both keys, repo-root <code>.env</code>. Missing
-    <code>LLAMA_CLOUD_API_KEY</code> fails in stage 1, before extraction is ever attempted.</div>
+    <b>3 · Credentials.</b> <code>LLAMA_CLOUD_API_KEY</code> in the repo-root <code>.env</code>.
+    It fails in stage 1, before extraction is ever attempted. On the default local stage 2 that
+    is the only key you need — make sure <code>ollama serve</code> is running instead.</div>
   <div class="panel check"><span class="lab">Check it worked</span>
     <code>[C-llamaindex] inv_0001  OK  …s</code>, then <code>done: 1 ok, 0 errors</code>.
     Stage 1 is a network round-trip per document, so expect this to be slower than Track B.</div>
@@ -249,10 +260,18 @@ python eval.py --outputs ../03-parser/outputs_track_c.jsonl \
                --catchable "total_digit_swap,cgst_wrong_math,gstin_missing" \
                --cost-per-doc 0.75</pre>
   <div class="panel check"><span class="lab">The comparison that matters</span>
-    Put your row next to Track A's. If a two-stage framework pipeline does not beat
-    <code>pdfplumber</code> on <i>born-digital</i> PDFs, that is not a failure — it is the
+    Put your row next to Track A's text-path row. Same model, same schema, same scorer — so the
+    <b>only</b> difference is LlamaParse instead of <code>pdfplumber</code>. If the framework
+    pipeline does not beat it on <i>born-digital</i> PDFs, that is not a failure, it is the
     finding. Report it. The interesting question is what would have to be true about your
-    documents for stage 1 to be worth it.</div>
+    documents for stage 1 to earn its keep.</div>
+  <div class="panel warn"><span class="lab">One more thing the abstraction takes away</span>
+    Track A hands Ollama the JSON schema through <code>format=</code> — <b>constrained
+    decoding</b>, where the generated tokens literally cannot leave your schema. Going through
+    <code>structured_predict</code> you get the framework's own structured-output handling
+    instead, which on a small local model is closer to prompt-and-parse than a decoding
+    guarantee. Same model, same schema, <b>weaker guarantee</b>. If Track C scores below Track A
+    on identical hardware, look here before you blame LlamaParse.</div>
 </div>
 
 <div class="panel why"><span class="lab">This sheet covers the parser only</span>
@@ -262,8 +281,9 @@ python eval.py --outputs ../03-parser/outputs_track_c.jsonl \
 
 <footer>
 Track C · <code>03-parser/track_c_llamaindex.py</code> · needs <code>LLAMA_CLOUD_API_KEY</code>
-and <code>ANTHROPIC_API_KEY</code>, plus an install that is not in the default setup.
-Corrected from the provider docs during the pre-flight; never executed.
+only — stage 2 runs locally by default (<code>--llm anthropic</code> for the paid path) — plus
+an install that is not in the default setup. Corrected from the provider docs during the
+pre-flight; never executed.
 </footer>
 
 </div>
